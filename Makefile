@@ -9,13 +9,21 @@ LDFLAGS = -lwiringPi -lwiringPiDev
 SOURCES_BASIC = src/fpv_scanner.c
 SOURCES_ADVANCED = src/fpv_scanner_advanced.c
 SOURCES_NATIVE = src/fpv_scanner_native.c
+SOURCES_SIMPLE = src/fpv_scanner_simple.c
 TARGET_BASIC = fpv_scanner
 TARGET_ADVANCED = fpv_scanner_advanced
 TARGET_NATIVE = fpv_scanner_native
+TARGET_SIMPLE = fpv_scanner_simple
 INSTALL_DIR = /usr/local/bin
 
 # Цели по умолчанию
-all: $(TARGET_NATIVE)
+all: $(TARGET_SIMPLE)
+
+# Компиляция простого сканера (рекомендуется)
+$(TARGET_SIMPLE): $(SOURCES_SIMPLE)
+	@echo "🔨 Компиляция простого FPV Scanner..."
+	$(CC) $(CFLAGS) -o $(TARGET_SIMPLE) $(SOURCES_SIMPLE)
+	@echo "✅ Простой сканер скомпилирован: $(TARGET_SIMPLE)"
 
 # Компиляция нативного сканера (без WiringPi)
 $(TARGET_NATIVE): $(SOURCES_NATIVE)
@@ -36,26 +44,31 @@ $(TARGET_ADVANCED): $(SOURCES_ADVANCED)
 	@echo "✅ Продвинутый сканер скомпилирован: $(TARGET_ADVANCED)"
 
 # Установка
-install: $(TARGET_NATIVE)
+install: $(TARGET_SIMPLE)
 	@echo "📦 Установка FPV Scanner..."
-	sudo cp $(TARGET_NATIVE) $(INSTALL_DIR)/
-	sudo chmod +x $(INSTALL_DIR)/$(TARGET_NATIVE)
+	sudo cp $(TARGET_SIMPLE) $(INSTALL_DIR)/
+	sudo chmod +x $(INSTALL_DIR)/$(TARGET_SIMPLE)
 	@echo "✅ Установка завершена"
 
 # Удаление
 uninstall:
 	@echo "🗑️  Удаление FPV Scanner..."
-	sudo rm -f $(INSTALL_DIR)/$(TARGET_NATIVE)
+	sudo rm -f $(INSTALL_DIR)/$(TARGET_SIMPLE)
 	@echo "✅ Удаление завершено"
 
 # Очистка
 clean:
 	@echo "🧹 Очистка..."
-	rm -f $(TARGET_BASIC) $(TARGET_ADVANCED) $(TARGET_NATIVE)
+	rm -f $(TARGET_BASIC) $(TARGET_ADVANCED) $(TARGET_NATIVE) $(TARGET_SIMPLE)
 	@echo "✅ Очистка завершена"
 
+# Запуск простого сканера
+run: $(TARGET_SIMPLE)
+	@echo "🚀 Запуск простого FPV Scanner..."
+	sudo ./$(TARGET_SIMPLE)
+
 # Запуск нативного сканера
-run: $(TARGET_NATIVE)
+run-native: $(TARGET_NATIVE)
 	@echo "🚀 Запуск нативного FPV Scanner..."
 	sudo ./$(TARGET_NATIVE)
 
@@ -69,8 +82,13 @@ run-advanced: $(TARGET_ADVANCED)
 	@echo "🚀 Запуск продвинутого FPV Scanner..."
 	sudo ./$(TARGET_ADVANCED)
 
+# Тест простого сканера
+test: $(TARGET_SIMPLE)
+	@echo "🧪 Тестирование простого FPV Scanner..."
+	sudo ./$(TARGET_SIMPLE)
+
 # Тест нативного сканера
-test: $(TARGET_NATIVE)
+test-native: $(TARGET_NATIVE)
 	@echo "🧪 Тестирование нативного FPV Scanner..."
 	sudo ./$(TARGET_NATIVE)
 
@@ -89,12 +107,14 @@ help:
 	@echo "🚁 FPV Scanner - Makefile"
 	@echo "========================="
 	@echo "Доступные команды:"
-	@echo "  make              - Компиляция нативного сканера (рекомендуется)"
+	@echo "  make              - Компиляция простого сканера (рекомендуется)"
 	@echo "  make install      - Установка в систему"
-	@echo "  make run          - Запуск нативного сканера"
+	@echo "  make run          - Запуск простого сканера"
+	@echo "  make run-native   - Запуск нативного сканера"
 	@echo "  make run-basic    - Запуск базового сканера (требует WiringPi)"
 	@echo "  make run-advanced - Запуск продвинутого сканера (требует WiringPi)"
-	@echo "  make test         - Тест нативного сканера"
+	@echo "  make test         - Тест простого сканера"
+	@echo "  make test-native  - Тест нативного сканера"
 	@echo "  make test-basic   - Тест базового сканера"
 	@echo "  make test-advanced - Тест продвинутого сканера"
 	@echo "  make clean        - Очистка"

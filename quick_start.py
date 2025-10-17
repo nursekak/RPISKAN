@@ -74,8 +74,8 @@ def show_menu():
     print("=" * 40)
     print("1. 🧪 Тест оборудования")
     print("2. 🎯 Простой сканер Python (рекомендуется)")
-    print("3. ⚡ C сканер нативный (рекомендуется)")
-    print("4. 🚀 C сканер с WiringPi")
+    print("3. ⚡ C сканер простой (рекомендуется)")
+    print("4. 🚀 C сканер нативный")
     print("5. 📊 Только сканирование (без GUI)")
     print("6. ⚡ Включить SPI")
     print("7. 🔧 Настройки")
@@ -103,31 +103,30 @@ def run_advanced_scanner():
     print("⚙️ Продвинутый сканер недоступен (удален для упрощения)")
     print("Используйте простой сканер (опция 2)")
 
+def run_c_simple_scanner():
+    """Запуск простого C сканера"""
+    print("⚡ Запуск простого C сканера...")
+    try:
+        # Проверка, скомпилирован ли простой C сканер
+        if os.path.exists('fpv_scanner_simple'):
+            subprocess.run(['sudo', './fpv_scanner_simple'])
+        else:
+            print("❌ Простой C сканер не скомпилирован")
+            print("Скомпилируйте: make")
+    except Exception as e:
+        print(f"❌ Ошибка запуска простого C сканера: {e}")
+
 def run_c_native_scanner():
     """Запуск нативного C сканера"""
-    print("⚡ Запуск нативного C сканера...")
+    print("🚀 Запуск нативного C сканера...")
     try:
-        # Проверка, скомпилирован ли нативный C сканер
         if os.path.exists('fpv_scanner_native'):
             subprocess.run(['sudo', './fpv_scanner_native'])
         else:
             print("❌ Нативный C сканер не скомпилирован")
-            print("Скомпилируйте: make")
+            print("Скомпилируйте: make fpv_scanner_native")
     except Exception as e:
         print(f"❌ Ошибка запуска нативного C сканера: {e}")
-
-def run_c_wiringpi_scanner():
-    """Запуск C сканера с WiringPi"""
-    print("🚀 Запуск C сканера с WiringPi...")
-    try:
-        if os.path.exists('fpv_scanner'):
-            subprocess.run(['sudo', './fpv_scanner'])
-        else:
-            print("❌ C сканер с WiringPi не скомпилирован")
-            print("Скомпилируйте: make fpv_scanner")
-            print("⚠️  Требует WiringPi библиотеку")
-    except Exception as e:
-        print(f"❌ Ошибка запуска C сканера с WiringPi: {e}")
 
 def run_headless_scanner():
     """Запуск сканера без GUI"""
@@ -230,12 +229,12 @@ def main():
             
             if choice == '1':
                 run_hardware_test()
-            elif choice == '2':
+            el            if choice == '2':
                 run_simple_scanner()
             el            if choice == '3':
-                run_c_native_scanner()
+                run_c_simple_scanner()
             elif choice == '4':
-                run_c_wiringpi_scanner()
+                run_c_native_scanner()
             elif choice == '5':
                 run_headless_scanner()
             elif choice == '6':
