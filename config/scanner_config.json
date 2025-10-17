@@ -1,0 +1,187 @@
+{
+    "hardware": {
+        "gpio": {
+            "cs_pin": 8,
+            "rssi_pin": 7,
+            "spi_bus": 0,
+            "spi_device": 0,
+            "spi_speed": 2000000
+        },
+        "video": {
+            "device": "/dev/video0",
+            "width": 640,
+            "height": 480,
+            "fps": 30,
+            "codec": "MJPG"
+        },
+        "rx5808_pins": {
+            "cs": "CH2",
+            "mosi": "A",
+            "miso": "6.5M",
+            "sck": "CH1",
+            "rssi": "RSSI",
+            "video": "VIDEO",
+            "power": "+5V",
+            "ground": "GND",
+            "antenna": "ANT"
+        }
+    },
+    "frequencies": {
+        "channels": {
+            "A": 5865,
+            "B": 5845,
+            "C": 5825,
+            "D": 5805,
+            "E": 5785,
+            "F": 5765,
+            "G": 5745,
+            "H": 5725,
+            "I": 5885,
+            "J": 5905,
+            "K": 5925,
+            "L": 5945,
+            "M": 5705,
+            "N": 5685,
+            "O": 5665,
+            "P": 5645,
+            "Q": 5625,
+            "R": 5605,
+            "S": 5585,
+            "T": 5565,
+            "U": 5545,
+            "V": 5525,
+            "W": 5505,
+            "X": 5485,
+            "Y": 5465,
+            "Z": 5445,
+            "1": 5425,
+            "2": 5405,
+            "3": 5385,
+            "4": 5365,
+            "5": 5345,
+            "6": 5325,
+            "7": 5305,
+            "8": 5285,
+            "9": 5265,
+            "0": 5245
+        },
+        "band": "5.8GHz",
+        "frequency_range": {
+            "min": 5245,
+            "max": 5945
+        },
+        "frequency_bands": {
+            "racing": {
+                "name": "FPV Racing",
+                "channels": ["A", "B", "C", "D", "E", "F", "G", "H"],
+                "range": {"min": 5725, "max": 5865}
+            },
+            "long_range": {
+                "name": "Long Range",
+                "channels": ["I", "J", "K", "L", "M", "N", "O", "P"],
+                "range": {"min": 5645, "max": 5945}
+            },
+            "low_band": {
+                "name": "Low Band",
+                "channels": ["Q", "R", "S", "T", "U", "V", "W", "X"],
+                "range": {"min": 5485, "max": 5625}
+            },
+            "ultra_low": {
+                "name": "Ultra Low",
+                "channels": ["Y", "Z", "1", "2", "3", "4", "5", "6"],
+                "range": {"min": 5325, "max": 5465}
+            },
+            "extended": {
+                "name": "Extended Range",
+                "channels": ["7", "8", "9", "0"],
+                "range": {"min": 5245, "max": 5305}
+            }
+        }
+    },
+    "scanner": {
+        "scan_interval": 0.5,
+        "settling_time": 0.1,
+        "rssi_threshold": 50,
+        "strong_signal_threshold": 100,
+        "auto_video_capture": true,
+        "max_signals_display": 16,
+        "scan_modes": {
+            "full_range": {
+                "name": "Full Range Scan",
+                "description": "Scan entire 5.8GHz range (5245-5945 MHz)",
+                "channels": "all"
+            },
+            "racing_only": {
+                "name": "Racing Band Only",
+                "description": "Scan only FPV racing channels (5725-5865 MHz)",
+                "channels": ["A", "B", "C", "D", "E", "F", "G", "H"]
+            },
+            "long_range_only": {
+                "name": "Long Range Only",
+                "description": "Scan long range channels (5645-5945 MHz)",
+                "channels": ["I", "J", "K", "L", "M", "N", "O", "P"]
+            },
+            "custom_range": {
+                "name": "Custom Range",
+                "description": "User-defined frequency range",
+                "channels": []
+            }
+        }
+    },
+    "display": {
+        "window_size": "1400x900",
+        "spectrum_height": 400,
+        "video_width": 640,
+        "video_height": 480,
+        "update_rate": 10,
+        "spectrum_columns": 8
+    },
+    "colors": {
+        "spectrum_background": "black",
+        "frequency_labels": "white",
+        "channel_labels": "yellow",
+        "signal_bars": {
+            "weak": "green",
+            "medium": "yellow",
+            "strong": "orange",
+            "very_strong": "red"
+        },
+        "band_colors": {
+            "racing": "#00ff00",
+            "long_range": "#0088ff",
+            "low_band": "#ff8800",
+            "ultra_low": "#ff0088",
+            "extended": "#8800ff"
+        }
+    },
+    "logging": {
+        "enabled": true,
+        "level": "INFO",
+        "file": "/var/log/rpi_scanner.log",
+        "max_size": "10MB",
+        "backup_count": 5
+    },
+    "performance": {
+        "threading": true,
+        "video_buffer_size": 3,
+        "rssi_averaging": 5,
+        "memory_limit": "512MB",
+        "scan_optimization": {
+            "skip_weak_signals": true,
+            "focus_on_strong_signals": true,
+            "adaptive_scan_interval": true
+        }
+    },
+    "wiring": {
+        "raspberry_pi_pins": {
+            "cs": "GPIO 8 (Pin 24)",
+            "mosi": "GPIO 10 (Pin 19)",
+            "miso": "GPIO 9 (Pin 21)",
+            "sck": "GPIO 11 (Pin 23)",
+            "rssi": "GPIO 7 (Pin 26)",
+            "power": "5V (Pin 2) or 3.3V (Pin 1)",
+            "ground": "GND (Pin 6)"
+        },
+        "rx5808_pinout": "GND ANT GND | GND VIDEO A 6.5M RSSI +5V GND | CH3 CH2 CH1"
+    }
+} 
