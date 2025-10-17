@@ -50,6 +50,9 @@ typedef struct {
 
 static gui_data_t gui_data;
 
+// Прототипы функций
+void update_signals_list(void);
+
 // Обработчик сигналов
 void signal_handler(int sig) {
     (void)sig;
