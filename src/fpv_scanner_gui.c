@@ -4,6 +4,7 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,6 +66,12 @@ void simple_delay(int milliseconds) {
     }
 }
 
+// Обертка для gtk_widget_queue_draw для использования с g_idle_add
+gboolean queue_draw_wrapper(gpointer data) {
+    gtk_widget_queue_draw(GTK_WIDGET(data));
+    return FALSE;  // Не повторять
+}
+
 // Симуляция чтения RSSI
 int read_rssi_simulated(int frequency) {
     static int counter = 0;
@@ -124,7 +131,7 @@ void* scan_thread(void* arg) {
             pthread_mutex_unlock(&gui_data.data_mutex);
             
             // Обновление GUI
-            g_idle_add((GSourceFunc)gtk_widget_queue_draw, gui_data.drawing_area);
+            g_idle_add(queue_draw_wrapper, gui_data.drawing_area);
             
             // Небольшая задержка для GUI
             usleep(10000);  // 10ms
