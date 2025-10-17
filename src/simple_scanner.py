@@ -44,7 +44,9 @@ class SimpleFPVScanner:
         self.video_capturing = False
         
         # Инициализация оборудования
-        self.setup_hardware()
+        if not self.setup_hardware():
+            print("❌ Не удалось инициализировать оборудование")
+            return
         
         # Создание GUI
         self.create_gui()
@@ -66,6 +68,21 @@ class SimpleFPVScanner:
     def setup_hardware(self):
         """Инициализация GPIO и SPI для RX5808"""
         try:
+            # Проверка SPI устройств
+            import os
+            if not os.path.exists('/dev/spi0.0'):
+                print("❌ SPI не включен! Включите SPI в настройках Raspberry Pi:")
+                print("1. sudo nano /boot/config.txt")
+                print("2. Добавьте строку: dtparam=spi=on")
+                print("3. sudo reboot")
+                messagebox.showerror("SPI не включен", 
+                    "SPI не включен на Raspberry Pi!\n\n"
+                    "Включите SPI:\n"
+                    "1. sudo nano /boot/config.txt\n"
+                    "2. Добавьте: dtparam=spi=on\n"
+                    "3. sudo reboot")
+                return False
+            
             # Настройка GPIO
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.CS_PIN, GPIO.OUT)
@@ -78,10 +95,17 @@ class SimpleFPVScanner:
             self.spi.mode = 0
             
             print("✅ Оборудование инициализировано успешно")
+            return True
             
         except Exception as e:
             print(f"❌ Ошибка инициализации оборудования: {e}")
-            messagebox.showerror("Ошибка оборудования", f"Не удалось инициализировать оборудование: {e}")
+            messagebox.showerror("Ошибка оборудования", 
+                f"Не удалось инициализировать оборудование: {e}\n\n"
+                "Возможные причины:\n"
+                "1. SPI не включен\n"
+                "2. Неправильное подключение RX5808\n"
+                "3. Недостаточно прав доступа")
+            return False
     
     def rx5808_write(self, address, data):
         """Запись данных в регистр RX5808"""

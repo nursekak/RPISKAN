@@ -45,8 +45,13 @@ def check_requirements():
     try:
         result = subprocess.run(['ls', '/dev/spi*'], capture_output=True, text=True)
         if result.returncode != 0:
-            print("❌ SPI не включен. Добавьте dtparam=spi=on в /boot/config.txt")
+            print("❌ SPI не включен!")
+            print("🔧 Для включения SPI запустите:")
+            print("   chmod +x enable_spi.sh")
+            print("   ./enable_spi.sh")
             return False
+        else:
+            print("✅ SPI устройства обнаружены")
     except:
         print("⚠️  Не удалось проверить SPI")
     
@@ -70,8 +75,9 @@ def show_menu():
     print("1. 🧪 Тест оборудования")
     print("2. 🎯 Простой сканер (рекомендуется)")
     print("3. 📊 Только сканирование (без GUI)")
-    print("4. 🔧 Настройки")
-    print("5. ❌ Выход")
+    print("4. ⚡ Включить SPI")
+    print("5. 🔧 Настройки")
+    print("6. ❌ Выход")
     print("=" * 40)
 
 def run_hardware_test():
@@ -100,6 +106,19 @@ def run_headless_scanner():
     print("📊 Запуск сканера без GUI...")
     print("(Функция в разработке)")
     # Здесь можно добавить консольную версию сканера
+
+def enable_spi():
+    """Включение SPI"""
+    print("⚡ Включение SPI...")
+    try:
+        subprocess.run(['chmod', '+x', 'enable_spi.sh'])
+        subprocess.run(['./enable_spi.sh'])
+    except Exception as e:
+        print(f"❌ Ошибка включения SPI: {e}")
+        print("Попробуйте вручную:")
+        print("sudo nano /boot/config.txt")
+        print("Добавьте: dtparam=spi=on")
+        print("sudo reboot")
 
 def show_settings():
     """Показать настройки"""
@@ -157,7 +176,7 @@ def main():
         show_menu()
         
         try:
-            choice = input("\nВыберите опцию (1-5): ").strip()
+            choice = input("\nВыберите опцию (1-6): ").strip()
             
             if choice == '1':
                 run_hardware_test()
@@ -166,8 +185,10 @@ def main():
             elif choice == '3':
                 run_headless_scanner()
             elif choice == '4':
-                show_settings()
+                enable_spi()
             elif choice == '5':
+                show_settings()
+            elif choice == '6':
                 print("👋 До свидания!")
                 break
             else:

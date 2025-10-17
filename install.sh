@@ -35,6 +35,8 @@ echo "⚡ Включение SPI..."
 if ! grep -q "dtparam=spi=on" /boot/config.txt; then
     echo "dtparam=spi=on" | sudo tee -a /boot/config.txt
     echo "✅ SPI включен в /boot/config.txt"
+    echo "⚠️  Перезагрузите Raspberry Pi для применения изменений:"
+    echo "   sudo reboot"
 else
     echo "✅ SPI уже включен"
 fi
