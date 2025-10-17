@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <math.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
 
@@ -20,6 +21,15 @@
 #define END_FREQ 6000      // Конечная частота (МГц)
 #define NUM_CHANNELS (END_FREQ - START_FREQ + 1)
 
+// Типы сигналов
+typedef enum {
+    SIGNAL_TYPE_UNKNOWN = 0,
+    SIGNAL_TYPE_VIDEO,
+    SIGNAL_TYPE_CONTROL,
+    SIGNAL_TYPE_TELEMETRY,
+    SIGNAL_TYPE_NOISE
+} signal_type_t;
+
 // Структура для обнаруженного сигнала
 typedef struct {
     int frequency;
@@ -27,6 +37,10 @@ typedef struct {
     int strength;
     time_t timestamp;
     int active;
+    signal_type_t signal_type;
+    int video_confidence;  // Уверенность в том, что это видеосигнал (0-100)
+    int signal_stability;  // Стабильность сигнала
+    int bandwidth_estimate; // Оценка полосы пропускания
 } signal_info_t;
 
 // Структура для GUI данных
@@ -52,6 +66,9 @@ static gui_data_t gui_data;
 
 // Прототипы функций
 void update_signals_list(void);
+signal_type_t analyze_signal_type(int rssi, int frequency, int *video_confidence, int *stability, int *bandwidth);
+const char* get_signal_type_name(signal_type_t type);
+int compare_signals_by_frequency(const void *a, const void *b);
 
 // Обработчик сигналов
 void signal_handler(int sig) {
@@ -65,6 +82,75 @@ void simple_delay(int milliseconds) {
     while ((clock() - start) * 1000 / CLOCKS_PER_SEC < milliseconds) {
         // Простое ожидание
     }
+}
+
+// Анализ типа сигнала
+signal_type_t analyze_signal_type(int rssi, int frequency, int *video_confidence, int *stability, int *bandwidth) {
+    *video_confidence = 0;
+    *stability = 0;
+    *bandwidth = 0;
+    
+    // Базовые критерии для видеосигнала
+    if (rssi < 30) {
+        return SIGNAL_TYPE_NOISE;
+    }
+    
+    // Популярные FPV частоты (5.8 ГГц)
+    int popular_freqs[] = {5725, 5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880, 5905,5916,5917, 5925, 5945, 5965, 5985};
+    int num_popular = sizeof(popular_freqs) / sizeof(popular_freqs[0]);
+    
+    int is_popular_freq = 0;
+    for (int i = 0; i < num_popular; i++) {
+        if (frequency == popular_freqs[i]) {
+            is_popular_freq = 1;
+            break;
+        }
+    }
+    
+    // Анализ характеристик сигнала
+    if (rssi > 80 && is_popular_freq) {
+        *video_confidence = 85 + (rand() % 15);  // Высокая уверенность
+        *stability = 70 + (rand() % 25);
+        *bandwidth = 8 + (rand() % 4);  // 8-12 МГц для аналогового видео
+        return SIGNAL_TYPE_VIDEO;
+    } else if (rssi > 60 && is_popular_freq) {
+        *video_confidence = 60 + (rand() % 20);
+        *stability = 50 + (rand() % 30);
+        *bandwidth = 6 + (rand() % 6);
+        return SIGNAL_TYPE_VIDEO;
+    } else if (rssi > 40) {
+        *video_confidence = 30 + (rand() % 30);
+        *stability = 40 + (rand() % 30);
+        *bandwidth = 2 + (rand() % 4);
+        return SIGNAL_TYPE_CONTROL;
+    }
+    
+    return SIGNAL_TYPE_UNKNOWN;
+}
+
+// Получение названия типа сигнала
+const char* get_signal_type_name(signal_type_t type) {
+    switch (type) {
+        case SIGNAL_TYPE_VIDEO: return "📹 Видео";
+        case SIGNAL_TYPE_CONTROL: return "🎮 Управление";
+        case SIGNAL_TYPE_TELEMETRY: return "📊 Телеметрия";
+        case SIGNAL_TYPE_NOISE: return "🔇 Шум";
+        default: return "❓ Неизвестно";
+    }
+}
+
+// Функция сравнения для сортировки сигналов по частоте
+int compare_signals_by_frequency(const void *a, const void *b) {
+    const signal_info_t *signal_a = (const signal_info_t *)a;
+    const signal_info_t *signal_b = (const signal_info_t *)b;
+    
+    // Сначала активные сигналы, потом неактивные
+    if (signal_a->active != signal_b->active) {
+        return signal_b->active - signal_a->active;
+    }
+    
+    // Если оба активны или оба неактивны, сортируем по частоте
+    return signal_a->frequency - signal_b->frequency;
 }
 
 // Симуляция чтения RSSI
@@ -116,27 +202,59 @@ void update_signals_list() {
     
     pthread_mutex_lock(&gui_data.data_mutex);
     
-    // Добавление активных сигналов
+    // Создаем временный массив для сортировки
+    signal_info_t temp_signals[NUM_CHANNELS];
+    int active_count = 0;
+    
+    // Копируем активные сигналы в временный массив
     for (int i = 0; i < NUM_CHANNELS; i++) {
         if (gui_data.detected_signals[i].active) {
-            signal_info_t *signal = &gui_data.detected_signals[i];
-            
-            // Создание строки с информацией о сигнале
-            char signal_text[256];
-            time_t now = time(NULL);
-            int age = (int)(now - signal->timestamp);
-            
-            snprintf(signal_text, sizeof(signal_text),
-                    "📡 %d МГц | RSSI: %d | Сила: %d%% | Возраст: %ds",
-                    signal->frequency, signal->rssi, signal->strength, age);
-            
-            // Создание виджета для отображения сигнала
-            GtkWidget *row = gtk_list_box_row_new();
-            GtkWidget *label = gtk_label_new(signal_text);
-            gtk_label_set_xalign(GTK_LABEL(label), 0.0);
-            gtk_container_add(GTK_CONTAINER(row), label);
-            gtk_list_box_insert(list_box, row, -1);
+            temp_signals[active_count] = gui_data.detected_signals[i];
+            active_count++;
         }
+    }
+    
+    // Сортируем активные сигналы по частоте
+    if (active_count > 0) {
+        qsort(temp_signals, active_count, sizeof(signal_info_t), compare_signals_by_frequency);
+    }
+    
+    // Добавляем заголовок
+    GtkWidget *header_row = gtk_list_box_row_new();
+    GtkWidget *header_label = gtk_label_new("Тип | Частота | RSSI | Сила | Видео% | Стабильность% | Полоса | Возраст");
+    gtk_label_set_xalign(GTK_LABEL(header_label), 0.0);
+    gtk_widget_set_sensitive(header_label, FALSE);
+    gtk_container_add(GTK_CONTAINER(header_row), header_label);
+    gtk_list_box_insert(list_box, header_row, -1);
+    
+    // Добавляем отсортированные сигналы
+    for (int i = 0; i < active_count; i++) {
+        signal_info_t *signal = &temp_signals[i];
+        
+        // Создание строки с информацией о сигнале
+        char signal_text[512];
+        time_t now = time(NULL);
+        int age = (int)(now - signal->timestamp);
+        const char* type_name = get_signal_type_name(signal->signal_type);
+        
+        if (signal->signal_type == SIGNAL_TYPE_VIDEO) {
+            snprintf(signal_text, sizeof(signal_text),
+                    "%s %d МГц | RSSI: %d | Сила: %d%% | Видео: %d%% | Стабильность: %d%% | Полоса: %dМГц | Возраст: %ds",
+                    type_name, signal->frequency, signal->rssi, signal->strength, 
+                    signal->video_confidence, signal->signal_stability, signal->bandwidth_estimate, age);
+        } else {
+            snprintf(signal_text, sizeof(signal_text),
+                    "%s %d МГц | RSSI: %d | Сила: %d%% | Стабильность: %d%% | Полоса: %dМГц | Возраст: %ds",
+                    type_name, signal->frequency, signal->rssi, signal->strength, 
+                    signal->signal_stability, signal->bandwidth_estimate, age);
+        }
+        
+        // Создание виджета для отображения сигнала
+        GtkWidget *row = gtk_list_box_row_new();
+        GtkWidget *label = gtk_label_new(signal_text);
+        gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+        gtk_container_add(GTK_CONTAINER(row), label);
+        gtk_list_box_insert(list_box, row, -1);
     }
     
     pthread_mutex_unlock(&gui_data.data_mutex);
@@ -157,20 +275,38 @@ void* scan_thread(void* arg) {
             // Чтение RSSI
             int rssi = read_rssi_simulated(freq);
             
+            // Анализ типа сигнала
+            int video_confidence, stability, bandwidth;
+            signal_type_t signal_type = analyze_signal_type(rssi, freq, &video_confidence, &stability, &bandwidth);
+            
             // Обновление данных
             pthread_mutex_lock(&gui_data.data_mutex);
             gui_data.current_frequency = freq;
             gui_data.current_rssi = rssi;
             
             int channel_index = freq - START_FREQ;
-            if (rssi > 50) {
+            if (rssi > 30) {  // Снизили порог для лучшего обнаружения
+                // Обновляем существующий сигнал или создаем новый
                 gui_data.detected_signals[channel_index].frequency = freq;
                 gui_data.detected_signals[channel_index].rssi = rssi;
                 gui_data.detected_signals[channel_index].strength = (rssi * 100) / 255;
-                gui_data.detected_signals[channel_index].timestamp = time(NULL);
+                gui_data.detected_signals[channel_index].timestamp = time(NULL);  // Обновляем время
                 gui_data.detected_signals[channel_index].active = 1;
+                gui_data.detected_signals[channel_index].signal_type = signal_type;
+                gui_data.detected_signals[channel_index].video_confidence = video_confidence;
+                gui_data.detected_signals[channel_index].signal_stability = stability;
+                gui_data.detected_signals[channel_index].bandwidth_estimate = bandwidth;
             } else {
-                gui_data.detected_signals[channel_index].active = 0;
+                // Если сигнал слабый, помечаем как неактивный, но не удаляем сразу
+                // Это позволит сигналу "устареть" постепенно
+                if (gui_data.detected_signals[channel_index].active) {
+                    // Проверяем возраст сигнала - если он старый, деактивируем
+                    time_t now = time(NULL);
+                    int age = (int)(now - gui_data.detected_signals[channel_index].timestamp);
+                    if (age > 10) {  // Деактивируем если старше 10 секунд
+                        gui_data.detected_signals[channel_index].active = 0;
+                    }
+                }
             }
             pthread_mutex_unlock(&gui_data.data_mutex);
             
@@ -237,18 +373,41 @@ gboolean draw_spectrum(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_show_text(cr, rssi_text);
     }
     
-    // Отрисовка спектра
-    cairo_set_line_width(cr, 2);
-    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+    // Отрисовка спектра с разными цветами для типов сигналов
+    cairo_set_line_width(cr, 3);
     
     for (int i = 0; i < NUM_CHANNELS; i++) {
         if (gui_data.detected_signals[i].active) {
+            signal_info_t *signal = &gui_data.detected_signals[i];
             int x = (width * i) / NUM_CHANNELS;
-            int y = height - (height * gui_data.detected_signals[i].rssi) / 255;
+            int y = height - (height * signal->rssi) / 255;
+            
+            // Выбор цвета в зависимости от типа сигнала
+            switch (signal->signal_type) {
+                case SIGNAL_TYPE_VIDEO:
+                    cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);  // Зеленый для видео
+                    break;
+                case SIGNAL_TYPE_CONTROL:
+                    cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);  // Синий для управления
+                    break;
+                case SIGNAL_TYPE_TELEMETRY:
+                    cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);  // Желтый для телеметрии
+                    break;
+                default:
+                    cairo_set_source_rgb(cr, 1.0, 0.5, 0.0);  // Оранжевый для неизвестных
+                    break;
+            }
             
             cairo_move_to(cr, x, height);
             cairo_line_to(cr, x, y);
             cairo_stroke(cr);
+            
+            // Добавляем индикатор уверенности для видеосигналов
+            if (signal->signal_type == SIGNAL_TYPE_VIDEO && signal->video_confidence > 70) {
+                cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);  // Белый индикатор
+                cairo_arc(cr, x, y - 5, 3, 0, 2 * M_PI);
+                cairo_fill(cr);
+            }
         }
     }
     
@@ -392,14 +551,6 @@ GtkWidget* create_gui() {
     gui_data.signals_list = gtk_list_box_new();
     gtk_list_box_set_selection_mode(GTK_LIST_BOX(gui_data.signals_list), GTK_SELECTION_NONE);
     gtk_container_add(GTK_CONTAINER(scrolled_window), gui_data.signals_list);
-    
-    // Добавляем заголовок в список
-    GtkWidget *header_row = gtk_list_box_row_new();
-    GtkWidget *header_label = gtk_label_new("Частота | RSSI | Сила | Возраст");
-    gtk_label_set_xalign(GTK_LABEL(header_label), 0.0);
-    gtk_widget_set_sensitive(header_label, FALSE); // Делаем заголовок неактивным
-    gtk_container_add(GTK_CONTAINER(header_row), header_label);
-    gtk_list_box_insert(GTK_LIST_BOX(gui_data.signals_list), header_row, -1);
     
     return window;
 }
