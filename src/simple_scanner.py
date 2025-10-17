@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Raspberry Pi 4 RX5808 5.8GHz Scanner
-Real-time frequency scanner with video capture and display
+Простой сканер FPV сигналов для Raspberry Pi 4 + RX5808
+Упрощенный интерфейс для быстрого перехвата дронов на частоте 5.8 ГГц
 """
 
 import tkinter as tk
@@ -17,121 +17,121 @@ import os
 from PIL import Image, ImageTk
 import json
 
-class RPIScanner:
+class SimpleFPVScanner:
     def __init__(self):
-        # GPIO Configuration for RX5808
-        self.CS_PIN = 8          # Chip Select
-        self.RSSI_PIN = 7        # RSSI input (ADC)
+        # GPIO конфигурация для RX5808
+        self.CS_PIN = 8          # CH2 (Chip Select)
+        self.RSSI_PIN = 7       # RSSI input
         self.SPI_BUS = 0
         self.SPI_DEVICE = 0
         
-        # Video Configuration
-        self.video_device = "/dev/video0"  # USB Video DVR device
+        # Видео конфигурация
+        self.video_device = self.find_video_device()
         self.video_width = 640
         self.video_height = 480
         self.video_fps = 30
         
-        # Frequency Configuration (5.8GHz FPV channels)
+        # FPV каналы 5.8 ГГц
         self.channels = {
             'A': 5865, 'B': 5845, 'C': 5825, 'D': 5805,
             'E': 5785, 'F': 5765, 'G': 5745, 'H': 5725
         }
         
-        # Scanner state
+        # Состояние сканера
         self.scanning = False
         self.current_channel = 'A'
         self.detected_signals = {}
         self.video_capturing = False
         
-        # Initialize GPIO and SPI
+        # Инициализация оборудования
         self.setup_hardware()
         
-        # Create GUI
+        # Создание GUI
         self.create_gui()
         
-    def setup_hardware(self):
-        """Initialize GPIO and SPI for RX5808 communication"""
+    def find_video_device(self):
+        """Автоматическое определение USB Video DVR"""
         try:
-            # Setup GPIO
+            result = subprocess.run(['ls', '/dev/video*'], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                devices = result.stdout.strip().split('\n')
+                for device in devices:
+                    if device.strip():
+                        return device.strip()
+            return "/dev/video0"
+        except:
+            return "/dev/video0"
+    
+    def setup_hardware(self):
+        """Инициализация GPIO и SPI для RX5808"""
+        try:
+            # Настройка GPIO
             GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.CS_PIN, GPIO.OUT)
             GPIO.output(self.CS_PIN, GPIO.HIGH)
             
-            # Setup SPI
+            # Настройка SPI
             self.spi = spidev.SpiDev()
             self.spi.open(self.SPI_BUS, self.SPI_DEVICE)
             self.spi.max_speed_hz = 2000000
             self.spi.mode = 0
             
-            print("Hardware initialized successfully")
+            print("✅ Оборудование инициализировано успешно")
             
         except Exception as e:
-            print(f"Hardware initialization error: {e}")
-            messagebox.showerror("Hardware Error", f"Failed to initialize hardware: {e}")
+            print(f"❌ Ошибка инициализации оборудования: {e}")
+            messagebox.showerror("Ошибка оборудования", f"Не удалось инициализировать оборудование: {e}")
     
     def rx5808_write(self, address, data):
-        """Write data to RX5808 register"""
+        """Запись данных в регистр RX5808"""
         try:
-            # Prepare command (address + data)
             command = (address << 3) | data
-            
-            # Send via SPI
             GPIO.output(self.CS_PIN, GPIO.LOW)
             self.spi.writebytes([command])
             GPIO.output(self.CS_PIN, GPIO.HIGH)
-            
         except Exception as e:
-            print(f"RX5808 write error: {e}")
+            print(f"Ошибка записи RX5808: {e}")
     
     def set_frequency(self, frequency_mhz):
-        """Set RX5808 frequency in MHz"""
+        """Установка частоты RX5808 в МГц"""
         try:
-            # Convert frequency to RX5808 format
             freq_reg = int((frequency_mhz - 479) / 2)
-            
-            # Write frequency registers
             self.rx5808_write(0x01, freq_reg & 0xFF)
             self.rx5808_write(0x02, (freq_reg >> 8) & 0xFF)
-            
-            # Enable receiver
             self.rx5808_write(0x00, 0x01)
-            
-            print(f"Frequency set to {frequency_mhz} MHz")
-            
+            print(f"Частота установлена: {frequency_mhz} МГц")
         except Exception as e:
-            print(f"Frequency setting error: {e}")
+            print(f"Ошибка установки частоты: {e}")
     
     def read_rssi(self):
-        """Read RSSI value from RX5808"""
+        """Чтение значения RSSI с RX5808"""
         try:
-            # Read RSSI register
             GPIO.output(self.CS_PIN, GPIO.LOW)
-            self.spi.writebytes([0x08])  # RSSI read command
+            self.spi.writebytes([0x08])
             response = self.spi.readbytes(1)
             GPIO.output(self.CS_PIN, GPIO.HIGH)
-            
             return response[0] if response else 0
-            
         except Exception as e:
-            print(f"RSSI read error: {e}")
+            print(f"Ошибка чтения RSSI: {e}")
             return 0
     
     def scan_channels(self):
-        """Scan all channels for signals"""
+        """Сканирование всех каналов на наличие сигналов"""
         while self.scanning:
             for channel, freq in self.channels.items():
                 if not self.scanning:
                     break
                     
-                # Set frequency
+                # Установка частоты
                 self.set_frequency(freq)
-                time.sleep(0.1)  # Settling time
+                time.sleep(0.1)
                 
-                # Read RSSI
+                # Чтение RSSI
                 rssi = self.read_rssi()
                 
-                # Update detected signals
-                if rssi > 50:  # Threshold for signal detection
+                # Обновление обнаруженных сигналов
+                if rssi > 50:
                     self.detected_signals[channel] = {
                         'frequency': freq,
                         'rssi': rssi,
@@ -139,54 +139,58 @@ class RPIScanner:
                         'timestamp': time.time()
                     }
                     
-                    # Try to capture video if strong signal
+                    # Захват видео при сильном сигнале
                     if rssi > 100 and not self.video_capturing:
                         self.start_video_capture(channel, freq)
                 
-                # Update GUI
-                self.update_spectrum_display()
+                # Обновление GUI
+                self.update_display()
                 
-            time.sleep(0.5)  # Scan interval
+            time.sleep(0.5)
     
     def start_video_capture(self, channel, frequency):
-        """Start video capture from detected signal"""
+        """Запуск захвата видео с обнаруженного сигнала"""
         try:
             self.video_capturing = True
             self.current_channel = channel
             
-            # Update status
-            self.status_label.config(text=f"Capturing video from {channel} ({frequency} MHz)")
+            self.status_label.config(text=f"🎥 Захват видео с канала {channel} ({frequency} МГц)")
             
-            # Start video capture thread
+            # Запуск потока захвата видео
             video_thread = threading.Thread(target=self.capture_video)
             video_thread.daemon = True
             video_thread.start()
             
         except Exception as e:
-            print(f"Video capture start error: {e}")
+            print(f"Ошибка запуска захвата видео: {e}")
     
     def capture_video(self):
-        """Capture and display video from USB Video DVR"""
+        """Захват и отображение видео с USB Video DVR"""
         try:
-            # Initialize video capture
             cap = cv2.VideoCapture(self.video_device)
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.video_width)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.video_height)
             cap.set(cv2.CAP_PROP_FPS, self.video_fps)
             
             if not cap.isOpened():
-                print("Failed to open video device")
+                print("Не удалось открыть видеоустройство")
                 return
             
             while self.video_capturing:
                 ret, frame = cap.read()
                 if ret:
-                    # Convert frame for Tkinter
+                    # Добавление информации о канале
+                    cv2.putText(frame, f"Канал: {self.current_channel}", 
+                               (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.putText(frame, f"Частота: {self.channels[self.current_channel]} МГц", 
+                               (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+                    
+                    # Конвертация для Tkinter
                     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     frame_pil = Image.fromarray(frame_rgb)
                     frame_tk = ImageTk.PhotoImage(frame_pil)
                     
-                    # Update video display
+                    # Обновление отображения видео
                     self.video_label.config(image=frame_tk)
                     self.video_label.image = frame_tk
                 
@@ -195,108 +199,109 @@ class RPIScanner:
             cap.release()
             
         except Exception as e:
-            print(f"Video capture error: {e}")
+            print(f"Ошибка захвата видео: {e}")
         finally:
             self.video_capturing = False
     
     def create_gui(self):
-        """Create the main GUI window"""
+        """Создание главного окна GUI"""
         self.root = tk.Tk()
-        self.root.title("Raspberry Pi RX5808 5.8GHz Scanner")
-        self.root.geometry("1200x800")
+        self.root.title("🚁 Простой FPV Сканер - Raspberry Pi 4 + RX5808")
+        self.root.geometry("1000x700")
+        self.root.configure(bg='#2b2b2b')
         
-        # Configure grid
+        # Настройка сетки
         self.root.grid_columnconfigure(0, weight=1)
         self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(1, weight=1)
         
-        # Control panel
+        # Панель управления
         self.create_control_panel()
         
-        # Spectrum display
+        # Отображение спектра
         self.create_spectrum_display()
         
-        # Video display
+        # Отображение видео
         self.create_video_display()
         
-        # Status bar
+        # Строка состояния
         self.create_status_bar()
     
     def create_control_panel(self):
-        """Create control panel with buttons and settings"""
-        control_frame = ttk.LabelFrame(self.root, text="Scanner Controls", padding="10")
+        """Создание панели управления"""
+        control_frame = ttk.LabelFrame(self.root, text="🎛️ Управление сканером", padding="10")
         control_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=10, pady=5)
         
-        # Start/Stop button
-        self.scan_button = ttk.Button(control_frame, text="Start Scanning", 
+        # Кнопка старт/стоп
+        self.scan_button = ttk.Button(control_frame, text="▶️ Начать сканирование", 
                                      command=self.toggle_scanning)
         self.scan_button.pack(side="left", padx=5)
         
-        # Video capture button
-        self.video_button = ttk.Button(control_frame, text="Stop Video", 
+        # Кнопка остановки видео
+        self.video_button = ttk.Button(control_frame, text="⏹️ Остановить видео", 
                                       command=self.stop_video_capture)
         self.video_button.pack(side="left", padx=5)
         
-        # Channel selection
-        ttk.Label(control_frame, text="Channel:").pack(side="left", padx=5)
+        # Выбор канала
+        ttk.Label(control_frame, text="Канал:").pack(side="left", padx=5)
         self.channel_var = tk.StringVar(value="A")
         channel_combo = ttk.Combobox(control_frame, textvariable=self.channel_var, 
                                     values=list(self.channels.keys()), width=5)
         channel_combo.pack(side="left", padx=5)
         channel_combo.bind("<<ComboboxSelected>>", self.on_channel_select)
         
-        # RSSI threshold
-        ttk.Label(control_frame, text="RSSI Threshold:").pack(side="left", padx=5)
+        # Порог RSSI
+        ttk.Label(control_frame, text="Порог RSSI:").pack(side="left", padx=5)
         self.threshold_var = tk.IntVar(value=50)
         threshold_scale = ttk.Scale(control_frame, from_=0, to=255, 
                                    variable=self.threshold_var, orient="horizontal")
         threshold_scale.pack(side="left", padx=5)
     
     def create_spectrum_display(self):
-        """Create frequency spectrum display"""
-        spectrum_frame = ttk.LabelFrame(self.root, text="Frequency Spectrum", padding="10")
+        """Создание отображения частотного спектра"""
+        spectrum_frame = ttk.LabelFrame(self.root, text="📊 Частотный спектр", padding="10")
         spectrum_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=5)
         
-        # Canvas for spectrum visualization
+        # Canvas для визуализации спектра
         self.spectrum_canvas = tk.Canvas(spectrum_frame, width=400, height=300, 
                                         bg="black", highlightthickness=0)
         self.spectrum_canvas.pack(fill="both", expand=True)
         
-        # Draw frequency scale
+        # Отрисовка шкалы частот
         self.draw_frequency_scale()
     
     def create_video_display(self):
-        """Create video display area"""
-        video_frame = ttk.LabelFrame(self.root, text="Video Output", padding="10")
+        """Создание области отображения видео"""
+        video_frame = ttk.LabelFrame(self.root, text="📺 Видео выход", padding="10")
         video_frame.grid(row=1, column=1, sticky="nsew", padx=10, pady=5)
         
-        # Video display label
-        self.video_label = ttk.Label(video_frame, text="No video signal", 
+        # Метка отображения видео
+        self.video_label = ttk.Label(video_frame, text="Нет видеосигнала", 
                                     background="black", foreground="white")
         self.video_label.pack(fill="both", expand=True)
     
     def create_status_bar(self):
-        """Create status bar"""
+        """Создание строки состояния"""
         status_frame = ttk.Frame(self.root)
         status_frame.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=5)
         
-        self.status_label = ttk.Label(status_frame, text="Ready")
+        self.status_label = ttk.Label(status_frame, text="Готов к работе")
         self.status_label.pack(side="left")
         
-        # Signal count
-        self.signal_count_label = ttk.Label(status_frame, text="Signals: 0")
+        # Счетчик сигналов
+        self.signal_count_label = ttk.Label(status_frame, text="Сигналов: 0")
         self.signal_count_label.pack(side="right")
     
     def draw_frequency_scale(self):
-        """Draw frequency scale on spectrum canvas"""
+        """Отрисовка шкалы частот на canvas спектра"""
         canvas = self.spectrum_canvas
         canvas.delete("all")
         
-        # Draw frequency range
-        canvas.create_text(200, 20, text="5.8GHz FPV Frequency Spectrum", 
+        # Заголовок
+        canvas.create_text(200, 20, text="5.8 ГГц FPV Частотный спектр", 
                           fill="white", font=("Arial", 12, "bold"))
         
-        # Draw frequency markers
+        # Маркеры частот
         x_start = 50
         x_end = 350
         y_base = 250
@@ -304,19 +309,19 @@ class RPIScanner:
         for i, (channel, freq) in enumerate(self.channels.items()):
             x = x_start + (i * (x_end - x_start) / (len(self.channels) - 1))
             
-            # Frequency label
+            # Метка частоты
             canvas.create_text(x, y_base + 20, text=f"{freq}", 
                               fill="white", font=("Arial", 8))
             canvas.create_text(x, y_base + 35, text=channel, 
                               fill="yellow", font=("Arial", 10, "bold"))
             
-            # Signal strength bar
+            # Полоса силы сигнала
             if channel in self.detected_signals:
                 signal = self.detected_signals[channel]
                 strength = signal['strength']
                 bar_height = int((strength / 100) * 150)
                 
-                # Color based on strength
+                # Цвет в зависимости от силы
                 if strength > 80:
                     color = "red"
                 elif strength > 60:
@@ -329,64 +334,64 @@ class RPIScanner:
                 canvas.create_rectangle(x-10, y_base - bar_height, x+10, y_base, 
                                       fill=color, outline="white")
                 
-                # RSSI value
+                # Значение RSSI
                 canvas.create_text(x, y_base - bar_height - 10, 
                                   text=f"{signal['rssi']}", 
                                   fill="white", font=("Arial", 8))
     
-    def update_spectrum_display(self):
-        """Update spectrum display with current signal data"""
+    def update_display(self):
+        """Обновление отображения с текущими данными сигнала"""
         self.draw_frequency_scale()
         
-        # Update signal count
+        # Обновление счетчика сигналов
         signal_count = len(self.detected_signals)
-        self.signal_count_label.config(text=f"Signals: {signal_count}")
+        self.signal_count_label.config(text=f"Сигналов: {signal_count}")
         
-        # Schedule next update
+        # Планирование следующего обновления
         if self.scanning:
-            self.root.after(100, self.update_spectrum_display)
+            self.root.after(100, self.update_display)
     
     def toggle_scanning(self):
-        """Toggle scanning on/off"""
+        """Переключение сканирования вкл/выкл"""
         if not self.scanning:
             self.scanning = True
-            self.scan_button.config(text="Stop Scanning")
-            self.status_label.config(text="Scanning...")
+            self.scan_button.config(text="⏹️ Остановить сканирование")
+            self.status_label.config(text="Сканирование...")
             
-            # Start scanning thread
+            # Запуск потока сканирования
             scan_thread = threading.Thread(target=self.scan_channels)
             scan_thread.daemon = True
             scan_thread.start()
         else:
             self.scanning = False
-            self.scan_button.config(text="Start Scanning")
-            self.status_label.config(text="Scanning stopped")
+            self.scan_button.config(text="▶️ Начать сканирование")
+            self.status_label.config(text="Сканирование остановлено")
     
     def stop_video_capture(self):
-        """Stop video capture"""
+        """Остановка захвата видео"""
         self.video_capturing = False
-        self.video_label.config(text="No video signal")
-        self.status_label.config(text="Video capture stopped")
+        self.video_label.config(text="Нет видеосигнала")
+        self.status_label.config(text="Захват видео остановлен")
     
     def on_channel_select(self, event):
-        """Handle channel selection"""
+        """Обработка выбора канала"""
         channel = self.channel_var.get()
         if channel in self.channels:
             freq = self.channels[channel]
             self.set_frequency(freq)
-            self.status_label.config(text=f"Tuned to {channel} ({freq} MHz)")
+            self.status_label.config(text=f"Настроен на канал {channel} ({freq} МГц)")
     
     def run(self):
-        """Start the application"""
+        """Запуск приложения"""
         try:
             self.root.mainloop()
         except KeyboardInterrupt:
-            print("Shutting down...")
+            print("Завершение работы...")
         finally:
             self.cleanup()
     
     def cleanup(self):
-        """Clean up resources"""
+        """Очистка ресурсов"""
         self.scanning = False
         self.video_capturing = False
         
@@ -398,5 +403,5 @@ class RPIScanner:
             pass
 
 if __name__ == "__main__":
-    scanner = RPIScanner()
-    scanner.run() 
+    scanner = SimpleFPVScanner()
+    scanner.run()

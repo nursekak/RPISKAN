@@ -1,26 +1,26 @@
 # 🔌 Raspberry Pi 4 + RX5808 5.8GHz Scanner Wiring Guide
 
-## 📋 Hardware Requirements
+## 📋 Требования к оборудованию
 
-### **Core Components:**
-- **Raspberry Pi 4 Model B** (4GB RAM recommended)
-- **RX5808 5.8GHz Receiver Module**
-- **USB Video DVR** (for video capture)
-- **5.8GHz Antenna** (circular polarized recommended)
-- **Breadboard** and jumper wires
-- **Power supply** (5V, 3A minimum)
+### **Основные компоненты:**
+- **Raspberry Pi 4 Model B** (рекомендуется 4GB RAM)
+- **RX5808 5.8GHz Receiver Module** (модуль приемника)
+- **USB Video DVR** (для захвата видео)
+- **5.8GHz Антенна** (рекомендуется круговая поляризация)
+- **Макетная плата** и соединительные провода
+- **Блок питания** (5V, минимум 3A)
 
-### **Optional Components:**
-- **ADC Module** (MCP3008) for better RSSI reading
-- **Video amplifier** for signal boosting
-- **Heat sink** for RX5808 module
-- **Case/enclosure** for protection
+### **Дополнительные компоненты:**
+- **ADC модуль** (MCP3008) для лучшего чтения RSSI
+- **Видео усилитель** для усиления сигнала
+- **Радиатор** для модуля RX5808
+- **Корпус** для защиты
 
-## 🔌 Pin Connections
+## 🔌 Подключение контактов
 
-### **RX5808 Pinout (Actual):**
+### **Распиновка RX5808:**
 ```
-RX5808 Module Pinout:
+Распиновка модуля RX5808:
 ┌─────────────────────────────────────┐
 │ GND  ANT  GND                       │
 │ GND  VIDEO  A  6.5M  RSSI  +5V  GND │
@@ -28,21 +28,20 @@ RX5808 Module Pinout:
 └─────────────────────────────────────┘
 ```
 
-### **RX5808 to Raspberry Pi 4:**
+### **RX5808 к Raspberry Pi 4:**
 
 ```
-RX5808 Pin           Function          Raspberry Pi 4
+RX5808 Pin           Функция           Raspberry Pi 4
 ─────────────────    ──────────        ──────────────────
-GND                  Ground            GND (Pin 6)
-+5V                  Power             5V (Pin 2) or 3.3V (Pin 1)
-RSSI                 Signal Strength   GPIO 7 (Pin 26) [ADC]
-VIDEO                Video Output      USB Video DVR Input
-A                    SPI MOSI          GPIO 10 (Pin 19)
-6.5M                 SPI MISO          GPIO 9 (Pin 21)
+GND                  Земля             GND (Pin 6)
++5V                  Питание           5V (Pin 2) или 3.3V (Pin 1)
+RSSI                 Сила сигнала     GPIO 7 (Pin 26)
+VIDEO                Видео выход       Вход USB Video DVR
+A6.5M                SPI MOSI          GPIO 10 (Pin 19)
 CH1                  SPI SCK           GPIO 11 (Pin 23)
 CH2                  SPI CS            GPIO 8 (Pin 24)
-CH3                  Not Used          -
-ANT                  Antenna           Antenna Connector
+CH3                  Не используется   -
+ANT                  Антенна           Разъем антенны
 ```
 
 ### **USB Video DVR:**

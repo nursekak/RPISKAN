@@ -16,8 +16,7 @@
         },
         "rx5808_pins": {
             "cs": "CH2",
-            "mosi": "A",
-            "miso": "6.5M",
+            "mosi": "A6.5M",
             "sck": "CH1",
             "rssi": "RSSI",
             "video": "VIDEO",
@@ -176,12 +175,11 @@
         "raspberry_pi_pins": {
             "cs": "GPIO 8 (Pin 24)",
             "mosi": "GPIO 10 (Pin 19)",
-            "miso": "GPIO 9 (Pin 21)",
             "sck": "GPIO 11 (Pin 23)",
             "rssi": "GPIO 7 (Pin 26)",
             "power": "5V (Pin 2) or 3.3V (Pin 1)",
             "ground": "GND (Pin 6)"
         },
-        "rx5808_pinout": "GND ANT GND | GND VIDEO A 6.5M RSSI +5V GND | CH3 CH2 CH1"
+        "rx5808_pinout": "GND ANT GND | GND VIDEO A6.5M RSSI +5V GND | CH3 CH2 CH1"
     }
 } 

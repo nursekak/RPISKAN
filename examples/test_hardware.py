@@ -22,8 +22,7 @@ class HardwareTester:
         # RX5808 Pin Mapping
         self.RX5808_PINS = {
             'cs': 'CH2',      # GPIO 8
-            'mosi': 'A',      # GPIO 10
-            'miso': '6.5M',   # GPIO 9
+            'mosi': 'A6.5M',  # GPIO 10
             'sck': 'CH1',     # GPIO 11
             'rssi': 'RSSI',   # GPIO 7
             'video': 'VIDEO', # To USB DVR
@@ -283,8 +282,7 @@ class HardwareTester:
             print("🎉 All tests passed! Hardware is ready for scanning.")
             print("\n📋 RX5808 Pin Connections:")
             print(f"   CS (CH2): GPIO {self.CS_PIN}")
-            print(f"   MOSI (A): GPIO 10")
-            print(f"   MISO (6.5M): GPIO 9")
+            print(f"   MOSI (A6.5M): GPIO 10")
             print(f"   SCK (CH1): GPIO 11")
             print(f"   RSSI: GPIO {self.RSSI_PIN}")
             print(f"   VIDEO: To USB DVR")
