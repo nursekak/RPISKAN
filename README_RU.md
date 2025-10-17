@@ -85,7 +85,7 @@ chmod +x install.sh
 sudo apt update && sudo apt upgrade
 
 # Включение SPI
-sudo nano /boot/config.txt
+sudo nano /boot/firmware/config.txt
 # Добавить: dtparam=spi=on
 sudo reboot
 
@@ -186,7 +186,7 @@ H        5725 МГц   FPV Competition
 ### **Частые проблемы:**
 
 1. **Ошибки SPI:**
-   - Проверьте настройки `/boot/config.txt`
+   - Проверьте настройки `/boot/firmware/config.txt`
    - Убедитесь в правильности подключения контактов
    - Проверьте командой `ls /dev/spi*`
 

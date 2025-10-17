@@ -10,7 +10,21 @@ chmod +x install.sh
 ./install.sh
 ```
 
-### **2. Подключение RX5808:**
+### **2. Включите SPI на Raspberry Pi:**
+```bash
+# Быстрое включение SPI
+chmod +x enable_spi_simple.sh
+./enable_spi_simple.sh
+
+# Или через raspi-config
+sudo raspi-config
+# Выберите: 3 Interface Options → P4 SPI → Yes → Finish
+
+# Перезагрузите Raspberry Pi
+sudo reboot
+```
+
+### **3. Подключение RX5808:**
 ```
 RX5808 Pin    →    Raspberry Pi 4    →    Функция
 ─────────────────────────────────────────────────
@@ -24,7 +38,7 @@ CH2           →    Pin 24 (GPIO 8)   →    SPI CS
 ANT           →    Антенна 5.8 ГГц  →    Антенна
 ```
 
-### **3. Запуск:**
+### **4. Запуск:**
 ```bash
 python3 quick_start.py
 # Выберите опцию 2 (Простой сканер)

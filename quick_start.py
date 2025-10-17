@@ -47,8 +47,8 @@ def check_requirements():
         if result.returncode != 0:
             print("❌ SPI не включен!")
             print("🔧 Для включения SPI запустите:")
-            print("   chmod +x enable_spi.sh")
-            print("   ./enable_spi.sh")
+            print("   chmod +x fix_spi.sh")
+            print("   ./fix_spi.sh")
             return False
         else:
             print("✅ SPI устройства обнаружены")
@@ -73,11 +73,13 @@ def show_menu():
     print("\n🚁 FPV Scanner - Быстрый запуск")
     print("=" * 40)
     print("1. 🧪 Тест оборудования")
-    print("2. 🎯 Простой сканер (рекомендуется)")
-    print("3. 📊 Только сканирование (без GUI)")
-    print("4. ⚡ Включить SPI")
-    print("5. 🔧 Настройки")
-    print("6. ❌ Выход")
+    print("2. 🎯 Простой сканер Python (рекомендуется)")
+    print("3. ⚡ C сканер (быстрый)")
+    print("4. 🚀 C сканер продвинутый")
+    print("5. 📊 Только сканирование (без GUI)")
+    print("6. ⚡ Включить SPI")
+    print("7. 🔧 Настройки")
+    print("8. ❌ Выход")
     print("=" * 40)
 
 def run_hardware_test():
@@ -101,6 +103,31 @@ def run_advanced_scanner():
     print("⚙️ Продвинутый сканер недоступен (удален для упрощения)")
     print("Используйте простой сканер (опция 2)")
 
+def run_c_scanner():
+    """Запуск C сканера"""
+    print("⚡ Запуск C сканера...")
+    try:
+        # Проверка, скомпилирован ли C сканер
+        if os.path.exists('fpv_scanner'):
+            subprocess.run(['sudo', './fpv_scanner'])
+        else:
+            print("❌ C сканер не скомпилирован")
+            print("Скомпилируйте: make fpv_scanner")
+    except Exception as e:
+        print(f"❌ Ошибка запуска C сканера: {e}")
+
+def run_c_advanced_scanner():
+    """Запуск продвинутого C сканера"""
+    print("🚀 Запуск продвинутого C сканера...")
+    try:
+        if os.path.exists('fpv_scanner_advanced'):
+            subprocess.run(['sudo', './fpv_scanner_advanced', '-v'])
+        else:
+            print("❌ Продвинутый C сканер не скомпилирован")
+            print("Скомпилируйте: make fpv_scanner_advanced")
+    except Exception as e:
+        print(f"❌ Ошибка запуска продвинутого C сканера: {e}")
+
 def run_headless_scanner():
     """Запуск сканера без GUI"""
     print("📊 Запуск сканера без GUI...")
@@ -109,16 +136,38 @@ def run_headless_scanner():
 
 def enable_spi():
     """Включение SPI"""
-    print("⚡ Включение SPI...")
-    try:
-        subprocess.run(['chmod', '+x', 'enable_spi.sh'])
-        subprocess.run(['./enable_spi.sh'])
-    except Exception as e:
-        print(f"❌ Ошибка включения SPI: {e}")
-        print("Попробуйте вручную:")
-        print("sudo nano /boot/config.txt")
-        print("Добавьте: dtparam=spi=on")
-        print("sudo reboot")
+    print("⚡ Включение SPI на Raspberry Pi OS...")
+    print("Выберите способ включения SPI:")
+    print("1. Через raspi-config (рекомендуется)")
+    print("2. Через командную строку")
+    print("3. Ручное редактирование")
+    print("4. Автоматический скрипт")
+    
+    choice = input("Выберите способ (1-4): ").strip()
+    
+    if choice == '1':
+        print("🔧 Запуск raspi-config...")
+        print("В меню выберите: 3 Interface Options → P4 SPI → Yes → Finish")
+        subprocess.run(['sudo', 'raspi-config'])
+    elif choice == '2':
+        print("🔧 Включение SPI через командную строку...")
+        subprocess.run(['sudo', 'raspi-config', 'nonint', 'do_spi', '0'])
+        print("✅ SPI включен! Перезагрузите Raspberry Pi: sudo reboot")
+    elif choice == '3':
+        print("🔧 Ручное редактирование...")
+        print("Откройте: sudo nano /boot/firmware/config.txt")
+        print("Добавьте строку: dtparam=spi=on")
+        print("Сохраните: Ctrl+X, Y, Enter")
+        print("Перезагрузите: sudo reboot")
+    elif choice == '4':
+        try:
+            subprocess.run(['chmod', '+x', 'fix_spi.sh'])
+            subprocess.run(['./fix_spi.sh'])
+        except Exception as e:
+            print(f"❌ Ошибка: {e}")
+            print("Попробуйте способ 2 или 3")
+    else:
+        print("❌ Неверный выбор")
 
 def show_settings():
     """Показать настройки"""
@@ -176,19 +225,23 @@ def main():
         show_menu()
         
         try:
-            choice = input("\nВыберите опцию (1-6): ").strip()
+            choice = input("\nВыберите опцию (1-8): ").strip()
             
             if choice == '1':
                 run_hardware_test()
             elif choice == '2':
                 run_simple_scanner()
             elif choice == '3':
-                run_headless_scanner()
+                run_c_scanner()
             elif choice == '4':
-                enable_spi()
+                run_c_advanced_scanner()
             elif choice == '5':
-                show_settings()
+                run_headless_scanner()
             elif choice == '6':
+                enable_spi()
+            elif choice == '7':
+                show_settings()
+            elif choice == '8':
                 print("👋 До свидания!")
                 break
             else:

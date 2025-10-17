@@ -32,9 +32,9 @@ pip3 install numpy pillow
 
 # Включение SPI
 echo "⚡ Включение SPI..."
-if ! grep -q "dtparam=spi=on" /boot/config.txt; then
-    echo "dtparam=spi=on" | sudo tee -a /boot/config.txt
-    echo "✅ SPI включен в /boot/config.txt"
+if ! grep -q "dtparam=spi=on" /boot/firmware/config.txt; then
+    echo "dtparam=spi=on" | sudo tee -a /boot/firmware/config.txt
+    echo "✅ SPI включен в /boot/firmware/config.txt"
     echo "⚠️  Перезагрузите Raspberry Pi для применения изменений:"
     echo "   sudo reboot"
 else
@@ -42,9 +42,9 @@ else
 fi
 
 # Включение I2C (для будущих расширений)
-if ! grep -q "dtparam=i2c_arm=on" /boot/config.txt; then
-    echo "dtparam=i2c_arm=on" | sudo tee -a /boot/config.txt
-    echo "✅ I2C включен в /boot/config.txt"
+if ! grep -q "dtparam=i2c_arm=on" /boot/firmware/config.txt; then
+    echo "dtparam=i2c_arm=on" | sudo tee -a /boot/firmware/config.txt
+    echo "✅ I2C включен в /boot/firmware/config.txt"
 fi
 
 # Создание директории для логов

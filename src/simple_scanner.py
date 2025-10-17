@@ -72,13 +72,13 @@ class SimpleFPVScanner:
             import os
             if not os.path.exists('/dev/spi0.0'):
                 print("❌ SPI не включен! Включите SPI в настройках Raspberry Pi:")
-                print("1. sudo nano /boot/config.txt")
+                print("1. sudo nano /boot/firmware/config.txt")
                 print("2. Добавьте строку: dtparam=spi=on")
                 print("3. sudo reboot")
                 messagebox.showerror("SPI не включен", 
                     "SPI не включен на Raspberry Pi!\n\n"
                     "Включите SPI:\n"
-                    "1. sudo nano /boot/config.txt\n"
+                    "1. sudo nano /boot/firmware/config.txt\n"
                     "2. Добавьте: dtparam=spi=on\n"
                     "3. sudo reboot")
                 return False

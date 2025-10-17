@@ -77,7 +77,7 @@ python3 examples/test_hardware.py
 
 ### **Включение SPI:**
 ```bash
-sudo nano /boot/config.txt
+sudo nano /boot/firmware/config.txt
 # Добавить строку:
 dtparam=spi=on
 

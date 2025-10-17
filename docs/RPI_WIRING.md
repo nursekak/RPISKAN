@@ -92,7 +92,7 @@ VIDEO                 Video Output      USB Video DVR
 ### **Step 1: Enable SPI on Raspberry Pi**
 ```bash
 # Edit config file
-sudo nano /boot/config.txt
+sudo nano /boot/firmware/config.txt
 
 # Add these lines:
 dtparam=spi=on
@@ -288,8 +288,8 @@ else:
 ### **Common Issues:**
 
 1. **SPI not working:**
-   - Check `/boot/config.txt` settings
-   - Verify pin connections (CH2=CS, A=MOSI, 6.5M=MISO, CH1=SCK)
+   - Check `/boot/firmware/config.txt` settings
+   - Verify pin connections (CH2=CS, A6.5M=MOSI, CH1=SCK)
    - Test with `ls /dev/spi*`
 
 2. **RSSI readings erratic:**
