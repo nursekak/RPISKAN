@@ -4,6 +4,7 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -131,7 +132,8 @@ void* scan_thread(void* arg) {
             g_idle_add(update_gui_callback, NULL);
             
             // Небольшая задержка для GUI
-            usleep(10000);  // 10ms
+            struct timespec ts = {0, 10000000}; // 10ms в наносекундах
+            nanosleep(&ts, NULL);
         }
         
         simple_delay(100);
