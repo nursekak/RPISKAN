@@ -37,6 +37,7 @@ typedef struct {
     GtkWidget *start_button;
     GtkWidget *stop_button;
     GtkWidget *rssi_progress;
+    GtkWidget *signals_list;
     
     signal_info_t detected_signals[NUM_CHANNELS];
     int current_frequency;
@@ -330,7 +331,7 @@ void on_stop_clicked(GtkWidget *widget, gpointer data) {
 
 // Создание GUI
 GtkWidget* create_gui() {
-    GtkWidget *window, *vbox, *hbox, *frame;
+    GtkWidget *window, *vbox, *hbox, *frame, *scrolled_window;
     
     // Главное окно
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
