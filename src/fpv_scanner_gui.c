@@ -3,12 +3,14 @@
  * Полный захват частот с шагом 1 МГц и визуализацией
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <signal.h>
 #include <pthread.h>
+#include <unistd.h>
 #include <gtk/gtk.h>
 #include <cairo.h>
 
@@ -87,6 +89,7 @@ int read_rssi_simulated(int frequency) {
 
 // Установка частоты (симуляция)
 int set_frequency(int frequency_mhz) {
+    (void)frequency_mhz;  // Suppress unused parameter warning
     simple_delay(10);
     return 0;
 }
@@ -197,7 +200,8 @@ gboolean draw_spectrum(GtkWidget *widget, cairo_t *cr, gpointer data) {
 }
 
 // Обновление статуса
-void update_status() {
+gboolean update_status(gpointer data) {
+    (void)data;
     char status_text[256];
     
     pthread_mutex_lock(&gui_data.data_mutex);
@@ -217,6 +221,8 @@ void update_status() {
                                  gui_data.current_rssi / 255.0);
     
     pthread_mutex_unlock(&gui_data.data_mutex);
+    
+    return gui_data.scanning;  // Continue timer if scanning
 }
 
 // Обработчик кнопки "Старт"
@@ -238,7 +244,7 @@ void on_start_clicked(GtkWidget *widget, gpointer data) {
         pthread_detach(scan_thread_id);
         
         // Таймер обновления GUI
-        g_timeout_add(100, (GSourceFunc)update_status, NULL);
+        g_timeout_add(100, update_status, NULL);
     }
 }
 
