@@ -229,9 +229,9 @@ def main():
             
             if choice == '1':
                 run_hardware_test()
-            el            if choice == '2':
+            elif choice == '2':
                 run_simple_scanner()
-            el            if choice == '3':
+            elif choice == '3':
                 run_c_simple_scanner()
             elif choice == '4':
                 run_c_native_scanner()
