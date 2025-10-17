@@ -10,16 +10,24 @@ SOURCES_BASIC = src/fpv_scanner.c
 SOURCES_ADVANCED = src/fpv_scanner_advanced.c
 SOURCES_NATIVE = src/fpv_scanner_native.c
 SOURCES_SIMPLE = src/fpv_scanner_simple.c
+SOURCES_MINIMAL = src/fpv_scanner_minimal.c
 TARGET_BASIC = fpv_scanner
 TARGET_ADVANCED = fpv_scanner_advanced
 TARGET_NATIVE = fpv_scanner_native
 TARGET_SIMPLE = fpv_scanner_simple
+TARGET_MINIMAL = fpv_scanner_minimal
 INSTALL_DIR = /usr/local/bin
 
 # Цели по умолчанию
-all: $(TARGET_SIMPLE)
+all: $(TARGET_MINIMAL)
 
-# Компиляция простого сканера (рекомендуется)
+# Компиляция минимального сканера (рекомендуется)
+$(TARGET_MINIMAL): $(SOURCES_MINIMAL)
+	@echo "🔨 Компиляция минимального FPV Scanner..."
+	$(CC) $(CFLAGS) -o $(TARGET_MINIMAL) $(SOURCES_MINIMAL)
+	@echo "✅ Минимальный сканер скомпилирован: $(TARGET_MINIMAL)"
+
+# Компиляция простого сканера
 $(TARGET_SIMPLE): $(SOURCES_SIMPLE)
 	@echo "🔨 Компиляция простого FPV Scanner..."
 	$(CC) $(CFLAGS) -o $(TARGET_SIMPLE) $(SOURCES_SIMPLE)
@@ -44,26 +52,31 @@ $(TARGET_ADVANCED): $(SOURCES_ADVANCED)
 	@echo "✅ Продвинутый сканер скомпилирован: $(TARGET_ADVANCED)"
 
 # Установка
-install: $(TARGET_SIMPLE)
+install: $(TARGET_MINIMAL)
 	@echo "📦 Установка FPV Scanner..."
-	sudo cp $(TARGET_SIMPLE) $(INSTALL_DIR)/
-	sudo chmod +x $(INSTALL_DIR)/$(TARGET_SIMPLE)
+	sudo cp $(TARGET_MINIMAL) $(INSTALL_DIR)/
+	sudo chmod +x $(INSTALL_DIR)/$(TARGET_MINIMAL)
 	@echo "✅ Установка завершена"
 
 # Удаление
 uninstall:
 	@echo "🗑️  Удаление FPV Scanner..."
-	sudo rm -f $(INSTALL_DIR)/$(TARGET_SIMPLE)
+	sudo rm -f $(INSTALL_DIR)/$(TARGET_MINIMAL)
 	@echo "✅ Удаление завершено"
 
 # Очистка
 clean:
 	@echo "🧹 Очистка..."
-	rm -f $(TARGET_BASIC) $(TARGET_ADVANCED) $(TARGET_NATIVE) $(TARGET_SIMPLE)
+	rm -f $(TARGET_BASIC) $(TARGET_ADVANCED) $(TARGET_NATIVE) $(TARGET_SIMPLE) $(TARGET_MINIMAL)
 	@echo "✅ Очистка завершена"
 
+# Запуск минимального сканера
+run: $(TARGET_MINIMAL)
+	@echo "🚀 Запуск минимального FPV Scanner..."
+	sudo ./$(TARGET_MINIMAL)
+
 # Запуск простого сканера
-run: $(TARGET_SIMPLE)
+run-simple: $(TARGET_SIMPLE)
 	@echo "🚀 Запуск простого FPV Scanner..."
 	sudo ./$(TARGET_SIMPLE)
 
@@ -82,8 +95,13 @@ run-advanced: $(TARGET_ADVANCED)
 	@echo "🚀 Запуск продвинутого FPV Scanner..."
 	sudo ./$(TARGET_ADVANCED)
 
+# Тест минимального сканера
+test: $(TARGET_MINIMAL)
+	@echo "🧪 Тестирование минимального FPV Scanner..."
+	sudo ./$(TARGET_MINIMAL)
+
 # Тест простого сканера
-test: $(TARGET_SIMPLE)
+test-simple: $(TARGET_SIMPLE)
 	@echo "🧪 Тестирование простого FPV Scanner..."
 	sudo ./$(TARGET_SIMPLE)
 
@@ -107,13 +125,15 @@ help:
 	@echo "🚁 FPV Scanner - Makefile"
 	@echo "========================="
 	@echo "Доступные команды:"
-	@echo "  make              - Компиляция простого сканера (рекомендуется)"
+	@echo "  make              - Компиляция минимального сканера (рекомендуется)"
 	@echo "  make install      - Установка в систему"
-	@echo "  make run          - Запуск простого сканера"
+	@echo "  make run          - Запуск минимального сканера"
+	@echo "  make run-simple   - Запуск простого сканера"
 	@echo "  make run-native   - Запуск нативного сканера"
 	@echo "  make run-basic    - Запуск базового сканера (требует WiringPi)"
 	@echo "  make run-advanced - Запуск продвинутого сканера (требует WiringPi)"
-	@echo "  make test         - Тест простого сканера"
+	@echo "  make test         - Тест минимального сканера"
+	@echo "  make test-simple  - Тест простого сканера"
 	@echo "  make test-native  - Тест нативного сканера"
 	@echo "  make test-basic   - Тест базового сканера"
 	@echo "  make test-advanced - Тест продвинутого сканера"

@@ -1,23 +1,13 @@
 /*
- * Простой FPV Scanner для Raspberry Pi 4 + RX5808
- * Минимальная версия без сложных системных вызовов
+ * Минимальный FPV Scanner для Raspberry Pi 4 + RX5808
+ * Максимально простая версия без проблемных функций
  */
 
-#define _POSIX_C_SOURCE 200809L
-#define _DEFAULT_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
 #include <signal.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdint.h>
-
-// Конфигурация
-#define SPI_DEVICE "/dev/spi0.0"
-#define SPI_SPEED 2000000
 
 // FPV каналы 5.8 ГГц
 typedef struct {
@@ -45,7 +35,6 @@ typedef struct {
 // Глобальные переменные
 static int running = 1;
 static signal_info_t detected_signals[NUM_CHANNELS];
-static int spi_fd = -1;
 
 // Обработчик сигналов
 void signal_handler(int sig __attribute__((unused))) {
@@ -53,25 +42,16 @@ void signal_handler(int sig __attribute__((unused))) {
     running = 0;
 }
 
-// Инициализация оборудования
-int init_hardware() {
-    printf("🔧 Инициализация оборудования...\n");
-    
-    // Проверка SPI устройства
-    spi_fd = open(SPI_DEVICE, O_RDWR);
-    if (spi_fd < 0) {
-        printf("❌ Ошибка открытия SPI устройства %s: %s\n", SPI_DEVICE, strerror(errno));
-        printf("Проверьте, что SPI включен: sudo raspi-config\n");
-        return -1;
+// Простая задержка
+void simple_delay(int milliseconds) {
+    clock_t start = clock();
+    while ((clock() - start) * 1000 / CLOCKS_PER_SEC < milliseconds) {
+        // Простое ожидание
     }
-    
-    printf("✅ Оборудование инициализировано успешно\n");
-    return 0;
 }
 
-// Симуляция чтения RSSI (для тестирования)
-int read_rssi_simulated() {
-    // Генерируем случайные значения RSSI для демонстрации
+// Симуляция чтения RSSI
+int read_rssi_simulated(void) {
     static int counter = 0;
     counter++;
     
@@ -85,16 +65,13 @@ int read_rssi_simulated() {
 
 // Установка частоты (симуляция)
 int set_frequency(int frequency_mhz) {
-    // В реальной версии здесь будет код для настройки RX5808
     printf("📡 Установка частоты: %d МГц\n", frequency_mhz);
-    // Задержка 100ms
-    struct timespec ts = {0, 100000000};  // 100ms в наносекундах
-    nanosleep(&ts, NULL);
+    simple_delay(100);  // 100ms settling time
     return 0;
 }
 
 // Сканирование каналов
-void scan_channels() {
+void scan_channels(void) {
     printf("🔍 Начинаем сканирование FPV каналов...\n");
     printf("Нажмите Ctrl+C для остановки\n\n");
     
@@ -125,14 +102,12 @@ void scan_channels() {
             }
         }
         
-        // Задержка 500ms
-        struct timespec ts = {0, 500000000};  // 500ms в наносекундах
-        nanosleep(&ts, NULL);
+        simple_delay(500);  // 500ms интервал сканирования
     }
 }
 
 // Отображение статистики
-void show_statistics() {
+void show_statistics(void) {
     int active_signals = 0;
     
     printf("\n📊 Статистика обнаруженных сигналов:\n");
@@ -157,49 +132,32 @@ void show_statistics() {
     }
 }
 
-// Очистка ресурсов
-void cleanup() {
-    printf("\n🧹 Очистка ресурсов...\n");
-    
-    if (spi_fd != -1) {
-        close(spi_fd);
-    }
-    
-    printf("✅ Очистка завершена\n");
-}
-
 // Главная функция
-int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused))) {
-    printf("🚁 Простой FPV Scanner для Raspberry Pi 4 + RX5808\n");
-    printf("==================================================\n");
+int main(void) {
+    printf("🚁 Минимальный FPV Scanner для Raspberry Pi 4 + RX5808\n");
+    printf("====================================================\n");
     printf("Перехват FPV сигналов дронов на частоте 5.8 ГГц\n");
-    printf("Упрощенная версия для тестирования\n\n");
+    printf("Максимально простая версия для тестирования\n\n");
     
     // Установка обработчиков сигналов
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
     
     // Инициализация генератора случайных чисел
-    srand(time(NULL));
-    
-    // Инициализация оборудования
-    if (init_hardware() != 0) {
-        printf("❌ Не удалось инициализировать оборудование\n");
-        printf("Проверьте подключение RX5808 и настройки SPI\n");
-        return 1;
-    }
+    srand((unsigned int)time(NULL));
     
     // Инициализация массива сигналов
     memset(detected_signals, 0, sizeof(detected_signals));
+    
+    printf("✅ Система инициализирована\n");
+    printf("📡 SPI устройства: /dev/spi0.0 (симуляция)\n");
+    printf("🎯 Начинаем сканирование...\n\n");
     
     // Запуск сканирования
     scan_channels();
     
     // Отображение статистики
     show_statistics();
-    
-    // Очистка ресурсов
-    cleanup();
     
     printf("👋 Сканер завершен\n");
     return 0;
