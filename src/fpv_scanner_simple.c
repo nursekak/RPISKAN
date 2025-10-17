@@ -3,6 +3,7 @@
  * Минимальная версия без сложных системных вызовов
  */
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,7 +47,7 @@ static signal_info_t detected_signals[NUM_CHANNELS];
 static int spi_fd = -1;
 
 // Обработчик сигналов
-void signal_handler(int sig) {
+void signal_handler(int sig __attribute__((unused))) {
     printf("\n🛑 Получен сигнал завершения, останавливаем сканер...\n");
     running = 0;
 }
@@ -98,7 +99,7 @@ void scan_channels() {
         printf("\r📡 Сканирование... ");
         fflush(stdout);
         
-        for (int i = 0; i < NUM_CHANNELS && running; i++) {
+        for (size_t i = 0; i < NUM_CHANNELS && running; i++) {
             // Установка частоты
             set_frequency(channels[i].frequency);
             
@@ -128,12 +129,11 @@ void scan_channels() {
 // Отображение статистики
 void show_statistics() {
     int active_signals = 0;
-    time_t current_time = time(NULL);
     
     printf("\n📊 Статистика обнаруженных сигналов:\n");
     printf("=====================================\n");
     
-    for (int i = 0; i < NUM_CHANNELS; i++) {
+    for (size_t i = 0; i < NUM_CHANNELS; i++) {
         if (detected_signals[i].active) {
             active_signals++;
             printf("Канал %c: %d МГц, RSSI: %d, Сила: %d%%, Время: %s",
@@ -164,7 +164,7 @@ void cleanup() {
 }
 
 // Главная функция
-int main(int argc, char *argv[]) {
+int main(int argc __attribute__((unused)), char *argv[] __attribute__((unused))) {
     printf("🚁 Простой FPV Scanner для Raspberry Pi 4 + RX5808\n");
     printf("==================================================\n");
     printf("Перехват FPV сигналов дронов на частоте 5.8 ГГц\n");
