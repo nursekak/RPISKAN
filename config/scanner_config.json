@@ -78,7 +78,7 @@
             },
             "long_range": {
                 "name": "Long Range",
-                "channels": ["I", "J", "K", "L", "M", "N", "O", "P"],
+                "channels": ["I","AA", "J", "K", "L", "M", "N", "O", "P"],
                 "range": {"min": 5645, "max": 5945}
             },
             "low_band": {
