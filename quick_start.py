@@ -43,17 +43,28 @@ def check_requirements():
     
     # Проверка SPI
     try:
+        import spidev
+        print("✅ spidev модуль доступен")
+        
+        # Проверка SPI устройств
         result = subprocess.run(['ls', '/dev/spi*'], capture_output=True, text=True)
         if result.returncode != 0:
-            print("❌ SPI не включен!")
-            print("🔧 Для включения SPI запустите:")
-            print("   chmod +x fix_spi.sh")
-            print("   ./fix_spi.sh")
+            print("❌ SPI устройства не найдены!")
+            print("🔧 Для включения SPI:")
+            print("   1. sudo raspi-config")
+            print("   2. Выберите: 3 Interface Options → P4 SPI → Yes")
+            print("   3. sudo reboot")
             return False
         else:
             print("✅ SPI устройства обнаружены")
-    except:
-        print("⚠️  Не удалось проверить SPI")
+            
+    except ImportError:
+        print("❌ spidev модуль не найден!")
+        print("🔧 Установите: sudo apt install python3-spidev")
+        return False
+    except Exception as e:
+        print(f"⚠️  Ошибка проверки SPI: {e}")
+        return False
     
     # Проверка видео устройства
     try:
@@ -78,8 +89,9 @@ def show_menu():
     print("4. 🚀 C сканер нативный")
     print("5. 📊 Только сканирование (без GUI)")
     print("6. ⚡ Включить SPI")
-    print("7. 🔧 Настройки")
-    print("8. ❌ Выход")
+    print("7. 🔍 Проверить SPI")
+    print("8. 🔧 Настройки")
+    print("9. ❌ Выход")
     print("=" * 40)
 
 def run_hardware_test():
@@ -169,6 +181,14 @@ def enable_spi():
     else:
         print("❌ Неверный выбор")
 
+def check_spi_detailed():
+    """Детальная проверка SPI"""
+    print("🔍 Детальная проверка SPI...")
+    try:
+        subprocess.run([sys.executable, 'check_spi.py'])
+    except Exception as e:
+        print(f"❌ Ошибка запуска проверки SPI: {e}")
+
 def show_settings():
     """Показать настройки"""
     print("\n🔧 Настройки системы:")
@@ -225,7 +245,7 @@ def main():
         show_menu()
         
         try:
-            choice = input("\nВыберите опцию (1-8): ").strip()
+            choice = input("\nВыберите опцию (1-9): ").strip()
             
             if choice == '1':
                 run_hardware_test()
@@ -240,8 +260,10 @@ def main():
             elif choice == '6':
                 enable_spi()
             elif choice == '7':
-                show_settings()
+                check_spi_detailed()
             elif choice == '8':
+                show_settings()
+            elif choice == '9':
                 print("👋 До свидания!")
                 break
             else:
