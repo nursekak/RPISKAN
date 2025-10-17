@@ -28,7 +28,8 @@ static int running = 1;
 static signal_info_t detected_signals[NUM_CHANNELS];
 
 // Обработчик сигналов
-void signal_handler(int sig __attribute__((unused))) {
+void signal_handler(int sig) {
+    (void)sig;  // Suppress unused parameter warning
     printf("\n🛑 Получен сигнал завершения, останавливаем сканер...\n");
     running = 0;
 }

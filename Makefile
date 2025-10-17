@@ -12,18 +12,30 @@ SOURCES_NATIVE = src/fpv_scanner_native.c
 SOURCES_SIMPLE = src/fpv_scanner_simple.c
 SOURCES_MINIMAL = src/fpv_scanner_minimal.c
 SOURCES_1MHZ = src/fpv_scanner_1mhz.c
+SOURCES_GUI = src/fpv_scanner_gui.c
 TARGET_BASIC = fpv_scanner
 TARGET_ADVANCED = fpv_scanner_advanced
 TARGET_NATIVE = fpv_scanner_native
 TARGET_SIMPLE = fpv_scanner_simple
 TARGET_MINIMAL = fpv_scanner_minimal
 TARGET_1MHZ = fpv_scanner_1mhz
+TARGET_GUI = fpv_scanner_gui
 INSTALL_DIR = /usr/local/bin
 
-# Цели по умолчанию
-all: $(TARGET_1MHZ)
+# Флаги компиляции для GUI
+GTK_CFLAGS = $(shell pkg-config --cflags gtk+-3.0)
+GTK_LIBS = $(shell pkg-config --libs gtk+-3.0)
 
-# Компиляция сканера с шагом 1 МГц (рекомендуется)
+# Цели по умолчанию
+all: $(TARGET_GUI)
+
+# Компиляция GUI сканера (рекомендуется)
+$(TARGET_GUI): $(SOURCES_GUI)
+	@echo "🔨 Компиляция FPV Scanner с графическим интерфейсом..."
+	$(CC) $(CFLAGS) $(GTK_CFLAGS) -o $(TARGET_GUI) $(SOURCES_GUI) $(GTK_LIBS) -lpthread
+	@echo "✅ GUI сканер скомпилирован: $(TARGET_GUI)"
+
+# Компиляция сканера с шагом 1 МГц
 $(TARGET_1MHZ): $(SOURCES_1MHZ)
 	@echo "🔨 Компиляция FPV Scanner с шагом 1 МГц..."
 	$(CC) $(CFLAGS) -o $(TARGET_1MHZ) $(SOURCES_1MHZ)
@@ -60,26 +72,31 @@ $(TARGET_ADVANCED): $(SOURCES_ADVANCED)
 	@echo "✅ Продвинутый сканер скомпилирован: $(TARGET_ADVANCED)"
 
 # Установка
-install: $(TARGET_1MHZ)
+install: $(TARGET_GUI)
 	@echo "📦 Установка FPV Scanner..."
-	sudo cp $(TARGET_1MHZ) $(INSTALL_DIR)/
-	sudo chmod +x $(INSTALL_DIR)/$(TARGET_1MHZ)
+	sudo cp $(TARGET_GUI) $(INSTALL_DIR)/
+	sudo chmod +x $(INSTALL_DIR)/$(TARGET_GUI)
 	@echo "✅ Установка завершена"
 
 # Удаление
 uninstall:
 	@echo "🗑️  Удаление FPV Scanner..."
-	sudo rm -f $(INSTALL_DIR)/$(TARGET_1MHZ)
+	sudo rm -f $(INSTALL_DIR)/$(TARGET_GUI)
 	@echo "✅ Удаление завершено"
 
 # Очистка
 clean:
 	@echo "🧹 Очистка..."
-	rm -f $(TARGET_BASIC) $(TARGET_ADVANCED) $(TARGET_NATIVE) $(TARGET_SIMPLE) $(TARGET_MINIMAL) $(TARGET_1MHZ)
+	rm -f $(TARGET_BASIC) $(TARGET_ADVANCED) $(TARGET_NATIVE) $(TARGET_SIMPLE) $(TARGET_MINIMAL) $(TARGET_1MHZ) $(TARGET_GUI)
 	@echo "✅ Очистка завершена"
 
+# Запуск GUI сканера
+run: $(TARGET_GUI)
+	@echo "🚀 Запуск FPV Scanner с графическим интерфейсом..."
+	./$(TARGET_GUI)
+
 # Запуск сканера с шагом 1 МГц
-run: $(TARGET_1MHZ)
+run-1mhz: $(TARGET_1MHZ)
 	@echo "🚀 Запуск FPV Scanner с шагом 1 МГц..."
 	sudo ./$(TARGET_1MHZ)
 
@@ -108,8 +125,13 @@ run-advanced: $(TARGET_ADVANCED)
 	@echo "🚀 Запуск продвинутого FPV Scanner..."
 	sudo ./$(TARGET_ADVANCED)
 
+# Тест GUI сканера
+test: $(TARGET_GUI)
+	@echo "🧪 Тестирование FPV Scanner с графическим интерфейсом..."
+	./$(TARGET_GUI)
+
 # Тест сканера с шагом 1 МГц
-test: $(TARGET_1MHZ)
+test-1mhz: $(TARGET_1MHZ)
 	@echo "🧪 Тестирование FPV Scanner с шагом 1 МГц..."
 	sudo ./$(TARGET_1MHZ)
 
@@ -143,22 +165,24 @@ help:
 	@echo "🚁 FPV Scanner - Makefile"
 	@echo "========================="
 	@echo "Доступные команды:"
-	@echo "  make              - Компиляция сканера с шагом 1 МГц (рекомендуется)"
+	@echo "  make              - Компиляция GUI сканера (рекомендуется)"
 	@echo "  make install      - Установка в систему"
-	@echo "  make run          - Запуск сканера с шагом 1 МГц"
+	@echo "  make run          - Запуск GUI сканера"
+	@echo "  make run-1mhz     - Запуск сканера с шагом 1 МГц"
 	@echo "  make run-minimal  - Запуск минимального сканера"
-	@echo "  make run-simple    - Запуск простого сканера"
-	@echo "  make run-native    - Запуск нативного сканера"
-	@echo "  make run-basic     - Запуск базового сканера (требует WiringPi)"
-	@echo "  make run-advanced  - Запуск продвинутого сканера (требует WiringPi)"
-	@echo "  make test          - Тест сканера с шагом 1 МГц"
-	@echo "  make test-minimal  - Тест минимального сканера"
-	@echo "  make test-simple   - Тест простого сканера"
-	@echo "  make test-native   - Тест нативного сканера"
-	@echo "  make test-basic    - Тест базового сканера"
+	@echo "  make run-simple   - Запуск простого сканера"
+	@echo "  make run-native   - Запуск нативного сканера"
+	@echo "  make run-basic    - Запуск базового сканера (требует WiringPi)"
+	@echo "  make run-advanced - Запуск продвинутого сканера (требует WiringPi)"
+	@echo "  make test         - Тест GUI сканера"
+	@echo "  make test-1mhz    - Тест сканера с шагом 1 МГц"
+	@echo "  make test-minimal - Тест минимального сканера"
+	@echo "  make test-simple  - Тест простого сканера"
+	@echo "  make test-native  - Тест нативного сканера"
+	@echo "  make test-basic   - Тест базового сканера"
 	@echo "  make test-advanced - Тест продвинутого сканера"
-	@echo "  make clean         - Очистка"
-	@echo "  make help          - Эта справка"
+	@echo "  make clean        - Очистка"
+	@echo "  make help         - Эта справка"
 	@echo ""
 	@echo "Требования:"
 	@echo "  - SPI включен на Raspberry Pi"
