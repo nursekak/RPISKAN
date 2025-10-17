@@ -90,8 +90,9 @@ def show_menu():
     print("5. 📊 Только сканирование (без GUI)")
     print("6. ⚡ Включить SPI")
     print("7. 🔍 Проверить SPI")
-    print("8. 🔧 Настройки")
-    print("9. ❌ Выход")
+    print("8. 🔧 Исправить SPI")
+    print("9. 🔧 Настройки")
+    print("10. ❌ Выход")
     print("=" * 40)
 
 def run_hardware_test():
@@ -189,6 +190,18 @@ def check_spi_detailed():
     except Exception as e:
         print(f"❌ Ошибка запуска проверки SPI: {e}")
 
+def fix_spi_permissions():
+    """Исправление проблем с SPI"""
+    print("🔧 Исправление проблем с SPI...")
+    try:
+        subprocess.run(['chmod', '+x', 'fix_spi_permissions.sh'])
+        subprocess.run(['./fix_spi_permissions.sh'])
+    except Exception as e:
+        print(f"❌ Ошибка исправления SPI: {e}")
+        print("Попробуйте вручную:")
+        print("sudo usermod -a -G spi $USER")
+        print("sudo reboot")
+
 def show_settings():
     """Показать настройки"""
     print("\n🔧 Настройки системы:")
@@ -245,7 +258,7 @@ def main():
         show_menu()
         
         try:
-            choice = input("\nВыберите опцию (1-9): ").strip()
+            choice = input("\nВыберите опцию (1-10): ").strip()
             
             if choice == '1':
                 run_hardware_test()
@@ -262,8 +275,10 @@ def main():
             elif choice == '7':
                 check_spi_detailed()
             elif choice == '8':
-                show_settings()
+                fix_spi_permissions()
             elif choice == '9':
+                show_settings()
+            elif choice == '10':
                 print("👋 До свидания!")
                 break
             else:

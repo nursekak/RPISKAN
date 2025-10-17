@@ -79,8 +79,39 @@ def test_spi_communication():
         print("✅ SPI коммуникация работает")
         spi.close()
         return True
+    except PermissionError:
+        print("❌ Нет прав доступа к SPI устройствам")
+        print("🔧 Решение: sudo usermod -a -G spi $USER")
+        print("   Затем выйдите и войдите снова")
+        return False
     except Exception as e:
         print(f"❌ Ошибка SPI коммуникации: {e}")
+        return False
+
+def check_spi_permissions():
+    """Проверка прав доступа к SPI"""
+    try:
+        import os
+        import grp
+        
+        # Проверка группы spi
+        try:
+            spi_group = grp.getgrnam('spi')
+            current_groups = os.getgroups()
+            
+            if spi_group.gr_gid in current_groups:
+                print("✅ Пользователь в группе spi")
+                return True
+            else:
+                print("❌ Пользователь НЕ в группе spi")
+                print("🔧 Решение: sudo usermod -a -G spi $USER")
+                print("   Затем выйдите и войдите снова")
+                return False
+        except KeyError:
+            print("❌ Группа spi не найдена")
+            return False
+    except Exception as e:
+        print(f"⚠️  Ошибка проверки прав: {e}")
         return False
 
 def main():
@@ -92,6 +123,7 @@ def main():
         ("Модуль spidev", check_spi_module),
         ("SPI устройства", check_spi_devices),
         ("Конфигурация SPI", check_spi_config),
+        ("Права доступа SPI", check_spi_permissions),
         ("SPI коммуникация", test_spi_communication)
     ]
     
