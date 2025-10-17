@@ -21,6 +21,12 @@
 #define END_FREQ 6000      // Конечная частота (МГц)
 #define NUM_CHANNELS (END_FREQ - START_FREQ + 1)
 
+// Настройки производительности для RPi 4
+#define SCAN_DELAY_MS 50        // Задержка между частотами (мс)
+#define GUI_UPDATE_INTERVAL 5   // Обновление GUI каждые N частот
+#define CYCLE_DELAY_MS 500      // Задержка между циклами (мс)
+#define STATUS_UPDATE_MS 500     // Обновление статуса (мс)
+
 // Типы сигналов
 typedef enum {
     SIGNAL_TYPE_UNKNOWN = 0,
@@ -267,6 +273,9 @@ void update_signals_list() {
 void* scan_thread(void* arg) {
     (void)arg;
     
+    // Небольшая задержка для стабилизации системы
+    simple_delay(1000);
+    
     while (gui_data.running && gui_data.scanning) {
         for (int freq = START_FREQ; freq <= END_FREQ && gui_data.running && gui_data.scanning; freq++) {
             // Установка частоты
@@ -310,15 +319,19 @@ void* scan_thread(void* arg) {
             }
             pthread_mutex_unlock(&gui_data.data_mutex);
             
-            // Обновление GUI
-            g_idle_add(update_gui_callback, NULL);
+            // Обновление GUI (реже для экономии ресурсов)
+            static int gui_update_counter = 0;
+            if (++gui_update_counter >= GUI_UPDATE_INTERVAL) {
+                g_idle_add(update_gui_callback, NULL);
+                gui_update_counter = 0;
+            }
             
-            // Небольшая задержка для GUI
-            struct timespec ts = {0, 10000000}; // 10ms в наносекундах
+            // Задержка для стабильности на RPi 4
+            struct timespec ts = {0, SCAN_DELAY_MS * 1000000}; // Конвертируем мс в нс
             nanosleep(&ts, NULL);
         }
         
-        simple_delay(100);
+        simple_delay(CYCLE_DELAY_MS);  // Задержка между циклами сканирования
     }
     
     return NULL;
@@ -465,13 +478,16 @@ void on_start_clicked(GtkWidget *widget, gpointer data) {
         gtk_widget_set_sensitive(gui_data.stop_button, TRUE);
         gtk_widget_set_sensitive(gui_data.start_button, FALSE);
         
-        // Запуск потока сканирования
+        // Запуск потока сканирования с низким приоритетом
         pthread_t scan_thread_id;
-        pthread_create(&scan_thread_id, NULL, scan_thread, NULL);
-        pthread_detach(scan_thread_id);
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        pthread_create(&scan_thread_id, &attr, scan_thread, NULL);
+        pthread_attr_destroy(&attr);
         
-        // Таймер обновления GUI
-        g_timeout_add(100, update_status, NULL);
+        // Таймер обновления GUI (реже для экономии ресурсов)
+        g_timeout_add(STATUS_UPDATE_MS, update_status, NULL);
     }
 }
 
