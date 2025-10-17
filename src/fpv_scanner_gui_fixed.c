@@ -96,7 +96,49 @@ int set_frequency(int frequency_mhz) {
 gboolean update_gui_callback(gpointer data) {
     (void)data;
     gtk_widget_queue_draw(gui_data.drawing_area);
+    update_signals_list();
     return FALSE;
+}
+
+// Обновление списка обнаруженных сигналов
+void update_signals_list() {
+    // Очистка текущего списка
+    GtkListBox *list_box = GTK_LIST_BOX(gui_data.signals_list);
+    GList *children = gtk_container_get_children(GTK_CONTAINER(list_box));
+    for (GList *l = children; l != NULL; l = l->next) {
+        gtk_widget_destroy(GTK_WIDGET(l->data));
+    }
+    g_list_free(children);
+    
+    pthread_mutex_lock(&gui_data.data_mutex);
+    
+    // Добавление активных сигналов
+    for (int i = 0; i < NUM_CHANNELS; i++) {
+        if (gui_data.detected_signals[i].active) {
+            signal_info_t *signal = &gui_data.detected_signals[i];
+            
+            // Создание строки с информацией о сигнале
+            char signal_text[256];
+            time_t now = time(NULL);
+            int age = (int)(now - signal->timestamp);
+            
+            snprintf(signal_text, sizeof(signal_text),
+                    "📡 %d МГц | RSSI: %d | Сила: %d%% | Возраст: %ds",
+                    signal->frequency, signal->rssi, signal->strength, age);
+            
+            // Создание виджета для отображения сигнала
+            GtkWidget *row = gtk_list_box_row_new();
+            GtkWidget *label = gtk_label_new(signal_text);
+            gtk_label_set_xalign(GTK_LABEL(label), 0.0);
+            gtk_container_add(GTK_CONTAINER(row), label);
+            gtk_list_box_insert(list_box, row, -1);
+        }
+    }
+    
+    pthread_mutex_unlock(&gui_data.data_mutex);
+    
+    // Показ обновленного списка
+    gtk_widget_show_all(GTK_WIDGET(list_box));
 }
 
 // Функция сканирования в отдельном потоке
@@ -165,6 +207,14 @@ gboolean draw_spectrum(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_move_to(cr, x, 0);
         cairo_line_to(cr, x, height);
         cairo_stroke(cr);
+        
+        // Подписи частот
+        int freq = START_FREQ + (i * NUM_CHANNELS) / 10;
+        char freq_text[16];
+        snprintf(freq_text, sizeof(freq_text), "%d", freq);
+        cairo_set_font_size(cr, 10);
+        cairo_move_to(cr, x + 2, height - 5);
+        cairo_show_text(cr, freq_text);
     }
     
     // Горизонтальные линии (RSSI)
@@ -173,6 +223,14 @@ gboolean draw_spectrum(GtkWidget *widget, cairo_t *cr, gpointer data) {
         cairo_move_to(cr, 0, y);
         cairo_line_to(cr, width, y);
         cairo_stroke(cr);
+        
+        // Подписи RSSI
+        int rssi_value = 255 - (i * 255) / 5;
+        char rssi_text[16];
+        snprintf(rssi_text, sizeof(rssi_text), "%d", rssi_value);
+        cairo_set_font_size(cr, 10);
+        cairo_move_to(cr, 5, y - 2);
+        cairo_show_text(cr, rssi_text);
     }
     
     // Отрисовка спектра
@@ -265,6 +323,9 @@ void on_stop_clicked(GtkWidget *widget, gpointer data) {
     gtk_button_set_label(GTK_BUTTON(gui_data.start_button), "Старт");
     gtk_widget_set_sensitive(gui_data.stop_button, FALSE);
     gtk_widget_set_sensitive(gui_data.start_button, TRUE);
+    
+    // Очистка списка сигналов при остановке
+    update_signals_list();
 }
 
 // Создание GUI
@@ -313,6 +374,28 @@ GtkWidget* create_gui() {
     gtk_box_pack_start(GTK_BOX(hbox), gtk_label_new("RSSI:"), FALSE, FALSE, 0);
     gui_data.rssi_progress = gtk_progress_bar_new();
     gtk_box_pack_start(GTK_BOX(hbox), gui_data.rssi_progress, TRUE, TRUE, 0);
+    
+    // Список обнаруженных сигналов
+    frame = gtk_frame_new("📡 Обнаруженные сигналы");
+    gtk_box_pack_start(GTK_BOX(vbox), frame, TRUE, TRUE, 5);
+    
+    scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), 
+                                  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scrolled_window), 150);
+    gtk_container_add(GTK_CONTAINER(frame), scrolled_window);
+    
+    gui_data.signals_list = gtk_list_box_new();
+    gtk_list_box_set_selection_mode(GTK_LIST_BOX(gui_data.signals_list), GTK_SELECTION_NONE);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), gui_data.signals_list);
+    
+    // Добавляем заголовок в список
+    GtkWidget *header_row = gtk_list_box_row_new();
+    GtkWidget *header_label = gtk_label_new("Частота | RSSI | Сила | Возраст");
+    gtk_label_set_xalign(GTK_LABEL(header_label), 0.0);
+    gtk_widget_set_sensitive(header_label, FALSE); // Делаем заголовок неактивным
+    gtk_container_add(GTK_CONTAINER(header_row), header_label);
+    gtk_list_box_insert(GTK_LIST_BOX(gui_data.signals_list), header_row, -1);
     
     return window;
 }
