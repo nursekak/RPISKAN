@@ -11,24 +11,30 @@ sudo apt update && sudo apt upgrade -y
 echo "🔨 Установка компилятора и инструментов..."
 sudo apt install -y gcc make build-essential
 
-# Установка WiringPi
-echo "⚡ Установка WiringPi..."
-sudo apt install -y wiringpi
+# Установка альтернативных библиотек GPIO
+echo "⚡ Установка библиотек GPIO..."
 
-# Проверка WiringPi
-echo "🔍 Проверка WiringPi..."
-if gpio -v >/dev/null 2>&1; then
-    echo "✅ WiringPi установлен"
-    gpio -v
+# Установка pigpio (современная альтернатива)
+sudo apt install -y pigpio python3-pigpio
+
+# Установка RPi.GPIO для Python
+sudo apt install -y python3-rpi.gpio
+
+# Установка spidev для SPI
+sudo apt install -y python3-spidev
+
+# Проверка доступных библиотек
+echo "🔍 Проверка библиотек GPIO..."
+if python3 -c "import RPi.GPIO" 2>/dev/null; then
+    echo "✅ RPi.GPIO доступен"
 else
-    echo "❌ WiringPi не найден, устанавливаем вручную..."
-    
-    # Установка из исходников
-    cd /tmp
-    git clone https://github.com/WiringPi/WiringPi.git
-    cd WiringPi
-    ./build
-    cd -
+    echo "❌ RPi.GPIO не найден"
+fi
+
+if python3 -c "import spidev" 2>/dev/null; then
+    echo "✅ spidev доступен"
+else
+    echo "❌ spidev не найден"
 fi
 
 # Включение SPI
